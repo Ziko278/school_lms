@@ -1,0 +1,207 @@
+{% extends 'base/base_staff.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Attendance Details | {{ school_info.school_name }}{% endblock %}
+
+{% block extra_head %}
+{# Chart.js if needed, or use ApexCharts/ECharts from base #}
+{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Attendance Details</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'attendance:attendance_list' %}">Attendance</a></li>
+            <li class="breadcrumb-item active">Details</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row">
+        <!-- Session Details -->
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-body">
+                     <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title">Session: {{ attendance.date|date:"M d, Y" }} - {{ attendance.course_allocation.course.code }}</h5>
+                        <a href="{% url 'attendance:attendance_edit' attendance.id %}" class="btn btn-warning btn-sm"><i class="bi bi-pencil-square me-1"></i> Edit Attendance</a>
+                    </div>
+                     <p><strong>Topic Covered:</strong> {{ attendance.topic_covered }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+         <div class="col-lg-12">
+             <div class="row">
+                 <div class="col-md-3">
+                     <div class="card info-card">
+                         <div class="card-body">
+                             <h5 class="card-title">Total Marked</h5>
+                             <div class="d-flex align-items-center">
+                                 <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-secondary-light">
+                                     <i class="bi bi-people text-secondary"></i>
+                                 </div>
+                                 <div class="ps-3"><h6 id="stat-total">{{ stats.total }}</h6></div>
+                             </div>
+                         </div>
+                     </div>
+                 </div>
+                  <div class="col-md-3">
+                     <div class="card info-card">
+                         <div class="card-body">
+                             <h5 class="card-title">Present</h5>
+                             <div class="d-flex align-items-center">
+                                 <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-success-light">
+                                     <i class="bi bi-check2-circle text-success"></i>
+                                 </div>
+                                 <div class="ps-3"><h6 id="stat-present">{{ stats.present }}</h6></div>
+                             </div>
+                         </div>
+                     </div>
+                 </div>
+                 <div class="col-md-3">
+                     <div class="card info-card">
+                         <div class="card-body">
+                             <h5 class="card-title">Absent</h5>
+                             <div class="d-flex align-items-center">
+                                 <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-danger-light">
+                                     <i class="bi bi-x-circle text-danger"></i>
+                                 </div>
+                                 <div class="ps-3"><h6 id="stat-absent">{{ stats.absent }}</h6></div>
+                             </div>
+                         </div>
+                     </div>
+                 </div>
+                  <div class="col-md-3">
+                     <div class="card info-card">
+                         <div class="card-body">
+                             <h5 class="card-title">Late</h5>
+                             <div class="d-flex align-items-center">
+                                 <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-warning-light">
+                                     <i class="bi bi-clock-history text-warning"></i>
+                                 </div>
+                                 <div class="ps-3"><h6 id="stat-late">{{ stats.late }}</h6></div>
+                             </div>
+                         </div>
+                     </div>
+                 </div>
+             </div>
+         </div><!-- End Statistics -->
+
+        <!-- Chart and Student List -->
+        <div class="col-lg-12">
+             <div class="card">
+                 <div class="card-body">
+                     <h5 class="card-title">Attendance Breakdown</h5>
+                     <div class="row">
+                         <div class="col-md-4">
+                             {# Pie chart container #}
+                            <div id="attendancePieChart" style="min-height: 250px;"></div>
+                         </div>
+                         <div class="col-md-8">
+                             {# Student List Table #}
+                             <h6>Student Records</h6>
+                             <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                <table class="table table-sm table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Matric No.</th>
+                                            <th>Name</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for record in records %}
+                                        <tr>
+                                            <td>{{ forloop.counter }}</td>
+                                            <td>{{ record.student.matric_number }}</td>
+                                            <td>{{ record.student.user.get_full_name }}</td>
+                                            <td>
+                                                {% if record.status == 'present' %}
+                                                    <span class="badge bg-success">Present</span>
+                                                {% elif record.status == 'absent' %}
+                                                    <span class="badge bg-danger">Absent</span>
+                                                {% elif record.status == 'late' %}
+                                                    <span class="badge bg-warning text-dark">Late</span>
+                                                {% else %}
+                                                     <span class="badge bg-secondary">{{ record.status|title }}</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted fst-italic">
+                                               No attendance records found for this session.
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                         </div>
+                     </div>
+                 </div>
+             </div>
+        </div>
+
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+{# Using ECharts as it's included in the base template #}
+<script src="{% static 'admin_site/vendor/echarts/echarts.min.js' %}"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const presentCount = parseInt(document.getElementById('stat-present').textContent);
+    const absentCount = parseInt(document.getElementById('stat-absent').textContent);
+    const lateCount = parseInt(document.getElementById('stat-late').textContent);
+
+    const chartData = [];
+    if (presentCount > 0) chartData.push({ value: presentCount, name: 'Present' });
+    if (absentCount > 0) chartData.push({ value: absentCount, name: 'Absent' });
+    if (lateCount > 0) chartData.push({ value: lateCount, name: 'Late' });
+
+    if (chartData.length > 0 && document.getElementById('attendancePieChart')) {
+        echarts.init(document.querySelector("#attendancePieChart")).setOption({
+            tooltip: {
+                trigger: 'item'
+            },
+            legend: {
+                orient: 'vertical',
+                left: 'left'
+            },
+            series: [{
+                name: 'Attendance',
+                type: 'pie',
+                radius: '70%',
+                data: chartData,
+                emphasis: {
+                    itemStyle: {
+                        shadowBlur: 10,
+                        shadowOffsetX: 0,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                    }
+                },
+                color: ['#28a745', '#dc3545', '#ffc107'] // Success, Danger, Warning
+            }]
+        });
+    } else if (document.getElementById('attendancePieChart')) {
+         document.getElementById('attendancePieChart').innerHTML = '<p class="text-center text-muted mt-5">No attendance data to display chart.</p>';
+    }
+  });
+
+  // Optional: Function to refresh stats via AJAX if needed
+  function refreshStats() {
+      // Fetch stats from get_attendance_stats_ajax endpoint
+      // Update text content of #stat-total, #stat-present etc.
+      // Update chart data and redraw
+  }
+</script>
+{% endblock %}

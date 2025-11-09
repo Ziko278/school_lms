@@ -1,0 +1,240 @@
+{% extends 'base/base_admin.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Student Details - {{ student.user.get_full_name|default:student.user.username }} | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Student Details</h1>
+    {% include 'components/breadcrumb.html' %}
+</div><!-- End Page Title -->
+
+<section class="section profile">
+    <div class="row">
+        <div class="col-xl-4">
+
+            <div class="card">
+                 <div class="card-body profile-card pt-4 d-flex flex-column align-items-center">
+
+                    <img src="{{ student.user.profile.profile_picture.url|default:'/static/admin_site/images/default_avatar.png' }}" alt="Profile" class="rounded-circle mb-3" style="width: 120px; height: 120px; object-fit: cover;">
+                    <h2>{{ student.user.get_full_name|default:student.user.username }}</h2>
+                    <h3>{{ student.matric_number }}</h3>
+                    <p class="small text-muted">{{ student.program.name|default:"N/A" }} - {{ student.current_level.name|default:"N/A" }}</p>
+                    <span class="badge {% if student.admission_status == 'admitted' %}bg-success{% elif student.admission_status == 'pending' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{{ student.get_admission_status_display }}</span>
+
+                    <div class="mt-3">
+                         <a href="{% url 'accounts:student_edit' student.id %}" class="btn btn-warning btn-sm" title="Edit Student"><i class="bi bi-pencil-square me-1"></i> Edit</a>
+                         {# Add other actions like 'Reset Password', 'View Transcript' if applicable #}
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Academic Summary</h5>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            CGPA
+                            <span class="badge bg-primary rounded-pill">{{ cgpa|floatformat:2|default:"N/A" }}</span>
+                        </li>
+                         <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Attendance
+                            <span class="badge {% if attendance_percentage < 75 %}bg-danger{% else %}bg-success{% endif %} rounded-pill">{{ attendance_percentage|floatformat:1|default:"0.0" }}%</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Total Classes Attended
+                            <span>{{ total_classes|default:"0" }}</span>
+                        </li>
+                         <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Admission Session
+                            <span>{{ student.admission_session.name|default:"N/A" }}</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="col-xl-8">
+
+            <div class="card">
+                <div class="card-body pt-3">
+                    <!-- Bordered Tabs -->
+                    <ul class="nav nav-tabs nav-tabs-bordered">
+
+                        <li class="nav-item">
+                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#profile-overview">Personal Info</button>
+                        </li>
+
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#enrolled-courses">Courses</button>
+                        </li>
+                         <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#results-summary">Results</button>
+                        </li>
+                         <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#payment-history">Payments</button>
+                        </li>
+
+                    </ul>
+                    <div class="tab-content pt-2">
+
+                        <div class="tab-pane fade show active profile-overview" id="profile-overview">
+                            <h5 class="card-title">Personal Details</h5>
+
+                             <div class="row">
+                                <div class="col-lg-3 col-md-4 label ">Full Name</div>
+                                <div class="col-lg-9 col-md-8">{{ student.user.get_full_name|default:"N/A" }}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-lg-3 col-md-4 label">JAMB Reg No</div>
+                                <div class="col-lg-9 col-md-8">{{ student.jamb_registration_number|default:"N/A" }}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Email</div>
+                                <div class="col-lg-9 col-md-8">{{ student.user.email|default:"N/A" }}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Phone</div>
+                                <div class="col-lg-9 col-md-8">{{ student.user.profile.phone_number|default:"N/A" }}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Gender</div>
+                                <div class="col-lg-9 col-md-8">{{ student.user.profile.get_gender_display|default:"N/A" }}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Date of Birth</div>
+                                <div class="col-lg-9 col-md-8">{{ student.user.profile.date_of_birth|date:"M d, Y"|default:"N/A" }}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Address</div>
+                                <div class="col-lg-9 col-md-8">{{ student.user.profile.address|default:"N/A" }}</div>
+                            </div>
+                             <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Registration Fee Paid</div>
+                                <div class="col-lg-9 col-md-8">
+                                    {% if student.has_paid_registration_fee %} <i class="bi bi-check-circle-fill text-success"></i> Yes {% else %} <i class="bi bi-x-circle-fill text-danger"></i> No {% endif %}
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div class="tab-pane fade pt-3" id="enrolled-courses">
+                            <h5 class="card-title">Enrolled Courses ({{ current_session.name }} - {{ current_semester.get_name_display }})</h5>
+
+                            {% if enrolled_courses %}
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Code</th>
+                                            <th>Title</th>
+                                            <th>Units</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for reg in enrolled_courses %}
+                                        <tr>
+                                            <td>{{ reg.course.code }}</td>
+                                            <td>{{ reg.course.title|truncatechars:40 }}</td>
+                                            <td>{{ reg.course.credit_units }}</td>
+                                            <td><span class="badge {% if reg.status == 'approved' %}bg-success{% elif reg.status == 'pending'%}bg-warning text-dark{% else %}bg-danger{% endif %}">{{ reg.get_status_display }}</span></td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                             <div class="text-end mt-2">
+                                <a href="#">View Full Course History &raquo;</a> {# Link to full list if available #}
+                            </div>
+                            {% else %}
+                                <p class="text-muted text-center">No courses registered for the current semester.</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="tab-pane fade pt-3" id="results-summary">
+                             <h5 class="card-title">Recent Results</h5>
+
+                             {% if all_results %}
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Course</th>
+                                            <th>Session</th>
+                                            <th>Semester</th>
+                                            <th>Total</th>
+                                            <th>Grade</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for result in all_results %}
+                                        <tr>
+                                            <td>{{ result.course.code }}</td>
+                                            <td>{{ result.session.name }}</td>
+                                            <td>{{ result.semester.get_name_display|slice:":3" }}</td>
+                                            <td>{{ result.total_score|floatformat:1 }}</td>
+                                            <td><span class="badge {% if result.grade == 'A' %}bg-success{% elif result.grade == 'F' %}bg-danger{% else %}bg-primary{% endif %}">{{ result.grade }}</span></td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="text-end mt-2">
+                                <a href="{% url 'results:student_transcript' %}">View Full Transcript &raquo;</a>
+                            </div>
+                             {% else %}
+                                <p class="text-muted text-center">No results found for this student yet.</p>
+                             {% endif %}
+
+                             {# Optional: Performance Charts #}
+                             {# <div id="resultChart"></div> #}
+                        </div>
+
+                         <div class="tab-pane fade pt-3" id="payment-history">
+                             <h5 class="card-title">Payment History</h5>
+                             {% with payments=student.payments.all %}
+                                {% if payments %}
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Reference</th>
+                                                    <th>Type</th>
+                                                    <th>Amount</th>
+                                                    <th>Date</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for payment in payments|slice:":10" %} {# Show recent 10 #}
+                                                <tr>
+                                                    <td>{{ payment.reference }}</td>
+                                                    <td>{{ payment.get_payment_type_display }}</td>
+                                                    <td>₦{{ payment.amount|intcomma }}</td>
+                                                    <td>{{ payment.payment_date|date:"M d, Y P"|default:"N/A" }}</td>
+                                                    <td><span class="badge {% if payment.status == 'success' %}bg-success{% elif payment.status == 'pending'%}bg-warning text-dark{% else %}bg-danger{% endif %}">{{ payment.get_status_display }}</span></td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="text-end mt-2">
+                                        <a href="#">View Full Payment History &raquo;</a> {# Link to full list #}
+                                    </div>
+                                {% else %}
+                                    <p class="text-muted text-center">No payment history found.</p>
+                                {% endif %}
+                             {% endwith %}
+                         </div>
+
+                    </div><!-- End Bordered Tabs -->
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

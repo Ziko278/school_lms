@@ -1,0 +1,179 @@
+{% extends 'base/base_admin.html' %} {# Inherits the portal structure #}
+{% load static %}
+
+{% block title %}{% block page_title %}Student Dashboard{% endblock %} | {{ school_info.school_name }}{% endblock %}
+
+{# Override sidebar content specific to Student #}
+{% block sidebar_content %}
+<ul class="sidebar-nav" id="sidebar-nav">
+
+    <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% else %}collapsed{% endif %}" href="{% url 'accounts:dashboard' %}">
+            <i class="bi bi-grid"></i>
+            <span>Dashboard</span>
+        </a>
+    </li><!-- End Dashboard Nav -->
+
+    {# Course Registration Section #}
+     {% if perms.courses.add_courseregistration %}
+    <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.app_name == 'courses' and 'student' in request.resolver_match.url_name %}active{% else %}collapsed{% endif %}" data-bs-target="#courses-nav" data-bs-toggle="collapse" href="#">
+            <i class="bi bi-journal-plus"></i><span>Courses</span><i class="bi bi-chevron-down ms-auto"></i>
+        </a>
+        <ul id="courses-nav" class="nav-content collapse {% if request.resolver_match.app_name == 'courses' and 'student' in request.resolver_match.url_name %}show{% endif %}" data-bs-parent="#sidebar-nav">
+             {% if perms.courses.add_courseregistration %}
+            <li>
+                <a href="{% url 'courses:student_register' %}" class="{% if request.resolver_match.url_name == 'student_register' %}active{% endif %}">
+                    <i class="bi bi-circle"></i><span>Register Courses</span>
+                </a>
+            </li>
+             {% endif %}
+            {% if perms.courses.view_courseregistration %}
+             <li>
+                <a href="{% url 'courses:student_registered_courses' %}" class="{% if request.resolver_match.url_name == 'student_registered_courses' %}active{% endif %}">
+                    <i class="bi bi-circle"></i><span>My Registered Courses</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </li><!-- End Course Registration Nav -->
+     {% endif %}
+
+
+    {# Materials Section #}
+    {% if perms.materials.view_classmaterial or perms.materials.view_assignment %}
+    <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.app_name == 'materials' and 'student' in request.resolver_match.url_name %}active{% else %}collapsed{% endif %}" data-bs-target="#materials-nav" data-bs-toggle="collapse" href="#">
+            <i class="bi bi-book-half"></i><span>Learning</span><i class="bi bi-chevron-down ms-auto"></i>
+        </a>
+        <ul id="materials-nav" class="nav-content collapse {% if request.resolver_match.app_name == 'materials' and 'student' in request.resolver_match.url_name %}show{% endif %}" data-bs-parent="#sidebar-nav">
+             {% if perms.materials.view_classmaterial %}
+            <li>
+                <a href="{% url 'materials:student_material_list' %}" class="{% if 'material' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-circle"></i><span>Course Materials</span>
+                </a>
+            </li>
+             {% endif %}
+             {% if perms.materials.view_assignment %}
+             <li>
+                <a href="{% url 'materials:student_assignment_list' %}" class="{% if 'assignment' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-circle"></i><span>Assignments</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </li><!-- End Materials Nav -->
+     {% endif %}
+
+
+    {# Attendance Section #}
+    {% if perms.attendance.view_attendancerecord %}
+    <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.app_name == 'attendance' and 'student' in request.resolver_match.url_name %}active{% else %}collapsed{% endif %}" href="{% url 'attendance:student_attendance' %}">
+            <i class="bi bi-person-check"></i>
+            <span>My Attendance</span>
+        </a>
+    </li>
+     {% endif %}
+
+    {# Results Section #}
+     {% if perms.results.view_result %}
+    <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.app_name == 'results' and 'student' in request.resolver_match.url_name %}active{% else %}collapsed{% endif %}" data-bs-target="#results-nav" data-bs-toggle="collapse" href="#">
+            <i class="bi bi-bar-chart-line"></i><span>Results</span><i class="bi bi-chevron-down ms-auto"></i>
+        </a>
+        <ul id="results-nav" class="nav-content collapse {% if request.resolver_match.app_name == 'results' and 'student' in request.resolver_match.url_name %}show{% endif %}" data-bs-parent="#sidebar-nav">
+            <li>
+                <a href="{% url 'results:student_result' %}" class="{% if request.resolver_match.url_name == 'student_result' %}active{% endif %}">
+                    <i class="bi bi-circle"></i><span>View Results</span>
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'results:student_transcript' %}" class="{% if request.resolver_match.url_name == 'student_transcript' %}active{% endif %}">
+                    <i class="bi bi-circle"></i><span>Transcript</span>
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'results:result_slip_download' %}" target="_blank" >
+                    <i class="bi bi-circle"></i><span>Download Slip (Current)</span>
+                </a>
+            </li>
+             <li>
+                <a href="{% url 'results:transcript_download' %}" target="_blank" >
+                    <i class="bi bi-circle"></i><span>Download Transcript</span>
+                </a>
+            </li>
+        </ul>
+    </li><!-- End Results Nav -->
+     {% endif %}
+
+     {# Virtual Class Section #}
+      {% if perms.virtual_class.view_classrecording or perms.virtual_class.view_whiteboard %}
+     <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.app_name == 'virtual_class' and 'student' in request.resolver_match.url_name %}active{% else %}collapsed{% endif %}" data-bs-target="#virtual-nav" data-bs-toggle="collapse" href="#">
+            <i class="bi bi-camera-video"></i><span>Virtual Class</span><i class="bi bi-chevron-down ms-auto"></i>
+        </a>
+        <ul id="virtual-nav" class="nav-content collapse {% if request.resolver_match.app_name == 'virtual_class' and 'student' in request.resolver_match.url_name %}show{% endif %}" data-bs-parent="#sidebar-nav">
+             {% if perms.virtual_class.view_classrecording %}
+            <li>
+                <a href="{% url 'virtual_class:student_recording_list' %}" class="{% if 'recording' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-circle"></i><span>Class Recordings</span>
+                </a>
+            </li>
+            {% endif %}
+             {# Link to list of available whiteboards if needed #}
+             {% comment %} {% if perms.virtual_class.view_whiteboard %}
+             <li>
+                 <a href="#"> <!- Link to student whiteboard list if created ->
+                    <i class="bi bi-circle"></i><span>Saved Whiteboards</span>
+                </a>
+            </li>
+            {% endif %} {% endcomment %}
+        </ul>
+    </li><!-- End Virtual Class Nav -->
+     {% endif %}
+
+     {# Admission Letter #}
+     {% if request.user.student.admission_status == 'admitted' %}
+     <li class="nav-item">
+        <a class="nav-link collapsed" href="{% url 'admissions:admission_letter_download' %}" target="_blank">
+            <i class="bi bi-file-earmark-pdf"></i>
+            <span>Admission Letter</span>
+        </a>
+    </li>
+     {% endif %}
+
+    <li class="nav-heading">Account</li>
+
+    <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'profile' %}active{% else %}collapsed{% endif %}" href="{% url 'accounts:profile' %}">
+            <i class="bi bi-person"></i>
+            <span>Profile</span>
+        </a>
+    </li><!-- End Profile Page Nav -->
+
+     <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'change_password' %}active{% else %}collapsed{% endif %}" href="{% url 'accounts:change_password' %}">
+            <i class="bi bi-key"></i>
+            <span>Change Password</span>
+        </a>
+    </li>
+     {% if perms.accounts.add_changepasswordrequest %}
+     <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'request_password_change' %}active{% else %}collapsed{% endif %}" href="{% url 'accounts:request_password_change' %}">
+            <i class="bi bi-question-circle"></i>
+            <span>Request Password Reset</span>
+        </a>
+    </li>
+    {% endif %}
+
+    <li class="nav-item">
+        <a class="nav-link collapsed" href="{% url 'accounts:logout' %}">
+            <i class="bi bi-box-arrow-right"></i>
+            <span>Logout</span>
+        </a>
+    </li><!-- End Logout Nav -->
+
+</ul>
+{% endblock %}
+

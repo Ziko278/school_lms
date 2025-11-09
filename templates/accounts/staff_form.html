@@ -1,0 +1,254 @@
+{% extends 'base/base_admin.html' %}
+{% load static %}
+
+{% block title %}{% if staff %}Edit Staff{% else %}Create Staff{% endif %} | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>{% if staff %}Edit Staff{% else %}Create Staff{% endif %}</h1>
+    {% include 'components/breadcrumb.html' %}
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row justify-content-center">
+        <div class="col-lg-12">
+
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">{% if staff %}Update Staff Details{% else %}Enter New Staff Information{% endif %}</h5>
+
+                     {% include 'components/alerts.html' %}
+
+                    <!-- Staff Form -->
+                    <form method="POST" action="" class="row g-3 needs-validation" novalidate>
+                        {% csrf_token %}
+
+                        {# User Information Section #}
+                        <fieldset class="border p-3 mb-4 rounded row">
+                            <legend class="float-none w-auto px-2 h6">User Account</legend>
+                            {{ form.errors }}
+
+                            {% if not staff %} {# Show User fields only on create #}
+                                <div class="col-md-6">
+                                    <label for="{{ form.username.id_for_label }}" class="form-label">{{ form.username.label }}</label>
+                                    {{ form.username }}
+                                    <div class="invalid-feedback">{{ form.username.errors|first|default:"Please provide a username." }}</div>
+                                    <div id="usernameCheckStatus" class="small mt-1"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ form.email.id_for_label }}" class="form-label">{{ form.email.label }}</label>
+                                    {{ form.email }}
+                                    <div class="invalid-feedback">{{ form.email.errors|first|default:"Please provide a valid email." }}</div>
+                                     <div id="emailCheckStatus" class="small mt-1"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ form.first_name.id_for_label }}" class="form-label">{{ form.first_name.label }}</label>
+                                    {{ form.first_name }}
+                                    <div class="invalid-feedback">{{ form.first_name.errors|first }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ form.last_name.id_for_label }}" class="form-label">{{ form.last_name.label }}</label>
+                                    {{ form.last_name }}
+                                    <div class="invalid-feedback">{{ form.last_name.errors|first }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ form.phone_number.id_for_label }}" class="form-label">{{ form.phone_number.label }}</label>
+                                    {{ form.phone_number }}
+                                    <div class="invalid-feedback">{{ form.phone_number.errors|first }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ form.gender.id_for_label }}" class="form-label">{{ form.gender.label }}</label>
+                                    {{ form.gender }}
+                                    <div class="invalid-feedback">{{ form.gender.errors|first }}</div>
+                                </div>
+                                 <div class="col-md-6">
+                                    <label for="{{ form.password1.id_for_label }}" class="form-label">{{ form.password1.label }}</label>
+                                    {{ form.password1 }}
+                                    <div class="invalid-feedback">{{ form.password1.errors|first }}</div>
+                                     <div class="form-text small">{{ form.password1.help_text|safe }}</div>
+                                </div>
+                            <div class="col-md-6">
+                                    <label for="{{ form.password2.id_for_label }}" class="form-label">{{ form.password2.label }}</label>
+                                    {{ form.password2 }}
+                                    <div class="invalid-feedback">{{ form.password2.errors|first }}</div>
+                                     <div class="form-text small">{{ form.password2.help_text|safe }}</div>
+                                </div>
+                            {% else %}
+                                <div class="col-12 mb-3">
+                                    <p><strong>Username:</strong> {{ staff.user.username }}</p>
+                                    <p><strong>Email:</strong> {{ staff.user.email }}</p>
+                                    <p><em>User account details (username, email) cannot be changed here.</em></p>
+                                </div>
+                            {% endif %}
+                        </fieldset>
+
+                        {# Staff Details Section #}
+                         <fieldset class="border p-3 mb-4 rounded">
+                            <legend class="float-none w-auto px-2 h6">Staff Information</legend>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="{{ form.department.id_for_label }}" class="form-label">{{ form.department.label }}</label>
+                                    {{ form.department }}
+                                    <div class="invalid-feedback">{{ form.department.errors|first }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ form.designation.id_for_label }}" class="form-label">{{ form.designation.label }}</label>
+                                    {{ form.designation }}
+                                    <div class="invalid-feedback">{{ form.designation.errors|first }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ form.date_of_employment.id_for_label }}" class="form-label">{{ form.date_of_employment.label }}</label>
+                                    {{ form.date_of_employment }} {# Assumes DateInput widget type="date" #}
+                                    <div class="invalid-feedback">{{ form.date_of_employment.errors|first }}</div>
+                                </div>
+                                <div class="col-md-12">
+                                    <label for="{{ form.qualifications.id_for_label }}" class="form-label">{{ form.qualifications.label }}</label>
+                                    {{ form.qualifications }}
+                                    <div class="invalid-feedback">{{ form.qualifications.errors|first }}</div>
+                                </div>
+                                 <div class="col-md-12">
+                                    <label for="{{ form.bio.id_for_label }}" class="form-label">{{ form.bio.label }}</label>
+                                    {{ form.bio }}
+                                    <div class="invalid-feedback">{{ form.bio.errors|first }}</div>
+                                </div>
+                            </div>
+                         </fieldset>
+
+                         {% if form.non_field_errors %}
+                            <div class="col-12 text-danger small">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="text-center mt-3">
+                            <button type="submit" class="btn btn-primary">{% if staff %}Update Staff{% else %}Create Staff{% endif %}</button>
+                            <a href="{% if staff %}{% url 'accounts:staff_detail' staff.id %}{% else %}{% url 'accounts:staff_list' %}{% endif %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form><!-- End Staff Form -->
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Example Bootstrap validation activation
+    (function () {
+      'use strict'
+      var forms = document.querySelectorAll('.needs-validation')
+      Array.prototype.slice.call(forms)
+        .forEach(function (form) {
+          form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+              event.preventDefault()
+              event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+          }, false)
+        })
+    })();
+
+    {% if not staff %} {# Only run checks on create form #}
+    // Username Check AJAX
+    const usernameInput = document.getElementById("{{ form.username.id_for_label }}");
+    const usernameStatus = document.getElementById("usernameCheckStatus");
+    usernameInput?.addEventListener('input', debounce(checkUsername, 500));
+
+    // Email Check AJAX
+    const emailInput = document.getElementById("{{ form.email.id_for_label }}");
+    const emailStatus = document.getElementById("emailCheckStatus");
+    emailInput?.addEventListener('input', debounce(checkEmail, 500));
+
+    function checkUsername() {
+        const username = usernameInput.value.trim();
+        if (username.length < 3) {
+            usernameStatus.textContent = '';
+            usernameStatus.className = 'small mt-1';
+            return;
+        }
+        usernameStatus.textContent = 'Checking...';
+        usernameStatus.className = 'small mt-1 text-muted';
+
+        fetch(`{% url 'accounts:check_username_ajax' %}?username=${encodeURIComponent(username)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.exists) {
+                    usernameStatus.textContent = 'Username already taken.';
+                    usernameStatus.className = 'small mt-1 text-danger';
+                     usernameInput.setCustomValidity('Username already taken.'); // For HTML5 validation
+                     usernameInput.classList.add('is-invalid');
+                } else {
+                    usernameStatus.textContent = 'Username available.';
+                    usernameStatus.className = 'small mt-1 text-success';
+                     usernameInput.setCustomValidity('');
+                     usernameInput.classList.remove('is-invalid');
+                }
+            })
+            .catch(error => {
+                console.error('Error checking username:', error);
+                usernameStatus.textContent = 'Error checking username.';
+                usernameStatus.className = 'small mt-1 text-warning';
+                 usernameInput.setCustomValidity(''); // Allow submission even if check fails
+            });
+    }
+
+     function checkEmail() {
+        const email = emailInput.value.trim();
+        // Basic email format check
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            emailStatus.textContent = 'Invalid email format.';
+            emailStatus.className = 'small mt-1 text-danger';
+            emailInput.setCustomValidity('Invalid email format.');
+            emailInput.classList.add('is-invalid');
+            return;
+        }
+
+        emailStatus.textContent = 'Checking...';
+        emailStatus.className = 'small mt-1 text-muted';
+
+        fetch(`{% url 'accounts:check_email_ajax' %}?email=${encodeURIComponent(email)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.exists) {
+                    emailStatus.textContent = 'Email already registered.';
+                    emailStatus.className = 'small mt-1 text-danger';
+                    emailInput.setCustomValidity('Email already registered.');
+                    emailInput.classList.add('is-invalid');
+                } else {
+                    emailStatus.textContent = 'Email available.';
+                    emailStatus.className = 'small mt-1 text-success';
+                     emailInput.setCustomValidity('');
+                     emailInput.classList.remove('is-invalid');
+                }
+            })
+            .catch(error => {
+                 console.error('Error checking email:', error);
+                emailStatus.textContent = 'Error checking email.';
+                emailStatus.className = 'small mt-1 text-warning';
+                emailInput.setCustomValidity(''); // Allow submission even if check fails
+            });
+    }
+
+    // Debounce function to limit AJAX calls while typing
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+    {% endif %}
+
+</script>
+{% endblock %}

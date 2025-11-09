@@ -1,0 +1,278 @@
+{% extends 'base/base_admin.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Course Registrations | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Course Registrations</h1>
+    {% include 'components/breadcrumb.html' %}
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-12">
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">Manage Student Course Registrations</h5>
+                        {# Add button for manual registration if needed later #}
+                    </div>
+
+                    {% include 'components/alerts.html' %}
+
+                    <!-- Filter & Search Form -->
+                    <form method="get" class="row g-3 mb-4 align-items-end">
+                        <div class="col-md-2">
+                            <label for="status" class="form-label form-label-sm">Status</label>
+                            <select id="status" name="status" class="form-select form-select-sm">
+                                <option value="">All (Default: Pending)</option>
+                                {% for value, display in status_choices %}
+                                <option value="{{ value }}" {% if value == selected_status %}selected{% endif %}>{{ display }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="session" class="form-label form-label-sm">Session</label>
+                            <select id="session" name="session" class="form-select form-select-sm">
+                                <option value="">All</option>
+                                {% for sess in sessions %}
+                                <option value="{{ sess.id }}" {% if sess.id|stringformat:"s" == selected_session %}selected{% endif %}>{{ sess.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="semester" class="form-label form-label-sm">Semester</label>
+                            <select id="semester" name="semester" class="form-select form-select-sm">
+                                <option value="">All</option>
+                                {% for sem in semesters %}
+                                <option value="{{ sem.id }}" {% if sem.id|stringformat:"s" == selected_semester %}selected{% endif %}>{{ sem.get_name_display }} ({{ sem.session.name }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                         <div class="col-md-2">
+                            <label for="department" class="form-label form-label-sm">Department</label>
+                            <select id="department" name="department" class="form-select form-select-sm">
+                                <option value="">All</option>
+                                {% for dept in departments %}
+                                <option value="{{ dept.id }}" {% if dept.id|stringformat:"s" == selected_department %}selected{% endif %}>{{ dept.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                             <label for="search" class="form-label form-label-sm visually-hidden">Search Matric</label>
+                            <input type="text" id="search" class="form-control form-control-sm" name="search" placeholder="Search Matric No..." value="{{ search_query|default:'' }}">
+                        </div>
+                        <div class="col-md-1">
+                            <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-search"></i></button>
+                        </div>
+                    </form>
+
+                    <!-- Bulk Action Form -->
+                    <form method="post" action="{% url 'courses:registration_bulk_approve' %}" id="bulkActionForm">
+                         {% csrf_token %}
+                         {% if selected_status == 'pending' or not selected_status %} {# Show bulk approve only for pending #}
+                         <div class="mb-3 d-flex align-items-center">
+                            <div class="form-check me-2">
+                                <input class="form-check-input" type="checkbox" id="selectAllCheckbox">
+                                <label class="form-check-label small" for="selectAllCheckbox">
+                                    Select All Visible
+                                </label>
+                            </div>
+                            <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-check2-circle me-1"></i> Approve Selected</button>
+                         </div>
+                         {% endif %}
+
+                        <!-- Registrations Table -->
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover"> {# Removed datatable class for manual bulk select #}
+                                <thead>
+                                    <tr>
+                                        {% if selected_status == 'pending' or not selected_status %}<th></th>{% endif %}
+                                        <th>Matric No.</th>
+                                        <th>Student Name</th>
+                                        <th>Course</th>
+                                        <th>Session</th>
+                                        <th>Semester</th>
+                                        <th>Registered On</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for reg in registrations_page %}
+                                    <tr>
+                                         {% if selected_status == 'pending' or not selected_status %}
+                                         <td><input class="form-check-input registration-checkbox" type="checkbox" name="registration_ids" value="{{ reg.id }}"></td>
+                                         {% endif %}
+                                        <td><a href="{% url 'accounts:student_detail' reg.student.id %}">{{ reg.student.matric_number }}</a></td>
+                                        <td>{{ reg.student.user.get_full_name }}</td>
+                                        <td>{{ reg.course.code }}</td>
+                                        <td>{{ reg.session.name }}</td>
+                                        <td>{{ reg.semester.get_name_display }}</td>
+                                        <td>{{ reg.registration_date|date:"Y-m-d H:i" }}</td>
+                                        <td>
+                                             <span class="badge
+                                                {% if reg.status == 'pending' %} bg-warning text-dark
+                                                {% elif reg.status == 'approved' %} bg-success
+                                                {% elif reg.status == 'rejected' %} bg-danger
+                                                {% else %} bg-secondary {% endif %}">
+                                                {{ reg.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if reg.status == 'pending' %}
+                                            <button type="button" class="btn btn-success btn-sm approve-btn" data-id="{{ reg.id }}" title="Approve"><i class="bi bi-check-lg"></i></button>
+                                            <button type="button" class="btn btn-danger btn-sm reject-btn" data-id="{{ reg.id }}" title="Reject"><i class="bi bi-x-lg"></i></button>
+                                            {% else %}
+                                            <span class="text-muted small">--</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="{% if selected_status == 'pending' or not selected_status %}9{% else %}8{% endif %}" class="text-center text-muted">No course registrations found matching your criteria.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- End Registrations Table -->
+                    </form> <!-- End Bulk Action Form -->
+
+                     {% include 'components/pagination.html' with page_obj=registrations_page %}
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const registrationCheckboxes = document.querySelectorAll('.registration-checkbox');
+    const approveButtons = document.querySelectorAll('.approve-btn');
+    const rejectButtons = document.querySelectorAll('.reject-btn');
+    const bulkActionForm = document.getElementById('bulkActionForm');
+
+    // Select All functionality
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            registrationCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+        });
+
+        registrationCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                if (!this.checked) {
+                    selectAllCheckbox.checked = false;
+                } else {
+                    // Check if all are checked
+                    const allChecked = Array.from(registrationCheckboxes).every(cb => cb.checked);
+                    selectAllCheckbox.checked = allChecked;
+                }
+            });
+        });
+    }
+
+    // Single Approve/Reject via AJAX
+    const handleAction = async (button, url, successClass, actionText) => {
+        const registrationId = button.dataset.id;
+        if (!registrationId) return;
+
+        if (!confirm(`Are you sure you want to ${actionText} this registration?`)) {
+            return;
+        }
+
+        button.disabled = true;
+        button.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>`;
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest' // Important for Django to detect AJAX
+                },
+                body: `registration_id=${registrationId}`
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                 // Update UI: change badge, remove buttons
+                 const row = button.closest('tr');
+                 const statusBadge = row.querySelector('.badge');
+                 statusBadge.className = `badge ${successClass}`; // Update class
+                 statusBadge.textContent = actionText === 'approve' ? 'Approved' : 'Rejected';
+                 button.closest('td').innerHTML = '<span class="text-muted small">--</span>'; // Remove actions
+
+                // Optionally show a success toast/alert
+                console.log(data.message);
+
+
+            } else {
+                 alert(`Error: ${data.message || 'Could not perform action.'}`);
+                 // Restore button state on error
+                 button.disabled = false;
+                 button.innerHTML = actionText === 'approve' ? '<i class="bi bi-check-lg"></i>' : '<i class="bi bi-x-lg"></i>';
+            }
+        } catch (error) {
+            console.error('AJAX Error:', error);
+            alert('An error occurred. Please try again.');
+             button.disabled = false;
+             button.innerHTML = actionText === 'approve' ? '<i class="bi bi-check-lg"></i>' : '<i class="bi bi-x-lg"></i>';
+        }
+    };
+
+    approveButtons.forEach(button => {
+        button.addEventListener('click', () => handleAction(
+            button,
+            '{% url "courses:approve_registration_ajax" %}', // URL for single approve AJAX
+            'bg-success',
+            'approve'
+        ));
+    });
+
+    rejectButtons.forEach(button => {
+        button.addEventListener('click', () => handleAction(
+            button,
+            '{% url "courses:reject_registration_ajax" %}', // URL for single reject AJAX
+            'bg-danger',
+            'reject'
+        ));
+    });
+
+     // Bulk Action Form Confirmation
+    if (bulkActionForm) {
+        bulkActionForm.addEventListener('submit', function(event) {
+            const selectedCount = document.querySelectorAll('.registration-checkbox:checked').length;
+            if (selectedCount === 0) {
+                 alert('Please select at least one registration to approve.');
+                 event.preventDefault();
+                 return;
+            }
+            if (!confirm(`Are you sure you want to approve the selected ${selectedCount} registration(s)?`)) {
+                event.preventDefault();
+            }
+        });
+    }
+
+     // Session/Semester filtering (if needed, similar to allocation_list)
+    const sessionSelect = document.getElementById('session');
+    const semesterSelect = document.getElementById('semester');
+    if(sessionSelect && semesterSelect) {
+         // Add JS to filter semesters based on session...
+    }
+
+});
+</script>
+{% endblock %}

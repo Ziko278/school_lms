@@ -1,0 +1,114 @@
+{% extends 'base/base_admin.html' %}
+{% load static %}
+
+{% block title %}{% if level %}Edit Level{% else %}Create Level{% endif %} | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>{% if level %}Edit Level{% else %}Create Level{% endif %}</h1>
+    {% include 'components/breadcrumb.html' %}
+</div><section class="section">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Level Details</h5>
+
+                    {% include 'components/alerts.html' %}
+
+                    <form method="POST" action="" class="row g-3 needs-validation" id="levelForm" novalidate>
+                        {% csrf_token %}
+
+                        <div class="col-12">
+                            <label for="{{ form.program.id_for_label }}" class="form-label">{{ form.program.label }}</label>
+                            {{ form.program }}
+                            <div class="invalid-feedback">{{ form.program.errors|first }}</div>
+                            {% if form.program.help_text %}
+                                <div class="form-text small">{{ form.program.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
+                            {{ form.name }}
+                            <div class="invalid-feedback" id="nameError">{{ form.name.errors|first }}</div>
+                            <div class="form-text small">{{ form.name.help_text }}</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="{{ form.order.id_for_label }}" class="form-label">{{ form.order.label }}</label>
+                             {{ form.order }}
+                            <div class="invalid-feedback">{{ form.order.errors|first }}</div>
+                            <div class="form-text small">{{ form.order.help_text }}</div>
+                        </div>
+
+
+                         <div class="col-md-6">
+                            <div class="form-check">
+                                {{ form.is_entry_level }}
+                                <label class="form-check-label" for="{{ form.is_entry_level.id_for_label }}">
+                                    {{ form.is_entry_level.label }}
+                                </label>
+                            </div>
+                            <div class="form-text small">Sets this as the program's starting level.</div>
+                            <div class="invalid-feedback">{{ form.is_entry_level.errors|first }}</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                {{ form.is_exit_level }}
+                                <label class="form-check-label" for="{{ form.is_exit_level.id_for_label }}">
+                                    {{ form.is_exit_level.label }}
+                                </label>
+                            </div>
+                            <div class="form-text small">Sets this as the program's final/graduating level.</div>
+                             <div class="invalid-feedback">{{ form.is_exit_level.errors|first }}</div>
+                        </div>
+
+
+                         {% if form.non_field_errors %}
+                            <div class="col-12">
+                                <div class="alert alert-danger alert-dismissible fade show small" role="alert">
+                                    {% for error in form.non_field_errors %}
+                                        <i class="bi bi-exclamation-octagon me-1"></i> {{ error }}<br>
+                                    {% endfor %}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary">{% if level %}Update{% else %}Create{% endif %} Level</button>
+                            <a href="{% url 'academics:level_list' %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form></div>
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById("levelForm");
+
+        // --- Bootstrap Validation Activation ---
+        // This script enables the default Bootstrap validation styling
+        form.addEventListener('submit', function (event) {
+             if (!form.checkValidity()) {
+              event.preventDefault();
+              event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+
+        // Note: The complex validation (like one entry/exit level per program
+        // or unique order per program) is handled by the 'clean' method in your
+        // Level model on the server. The errors will be displayed
+        // in the 'non_field_errors' block above.
+    });
+</script>
+{% endblock %}

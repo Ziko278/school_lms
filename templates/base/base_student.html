@@ -1,0 +1,156 @@
+{% extends 'base/base_admin.html' %} {# Inherits the portal structure #}
+{% load static %}
+
+{% block title %}{% block page_title %}Student Dashboard{% endblock %} | {{ school_info.school_name }}{% endblock %}
+
+{# Override sidebar content specific to Student #}
+{% block sidebar_content %}
+<ul class="sidebar-nav" id="sidebar-nav">
+
+    <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% else %}collapsed{% endif %}" href="{% url 'accounts:dashboard' %}">
+            <i class="bi bi-grid"></i>
+            <span>Dashboard</span>
+        </a>
+    </li><!-- End Dashboard Nav -->
+
+    {# Course Registration #}
+    <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.app_name == 'courses' and 'student' in request.resolver_match.url_name %}active{% else %}collapsed{% endif %}" data-bs-target="#courses-nav" data-bs-toggle="collapse" href="#">
+            <i class="bi bi-journal-plus"></i><span>Courses</span><i class="bi bi-chevron-down ms-auto"></i>
+        </a>
+        <ul id="courses-nav" class="nav-content collapse {% if request.resolver_match.app_name == 'courses' and 'student' in request.resolver_match.url_name %}show{% endif %}" data-bs-parent="#sidebar-nav">
+            {% if perms.courses.add_courseregistration %}
+            <li>
+                <a href="{% url 'courses:student_register' %}" class="{% if request.resolver_match.url_name == 'student_register' %}active{% endif %}">
+                    <i class="bi bi-circle"></i><span>Register Courses</span>
+                </a>
+            </li>
+            {% endif %}
+            {% if perms.courses.view_courseregistration %}
+            <li>
+                <a href="{% url 'courses:student_registered_courses' %}" class="{% if request.resolver_match.url_name == 'student_registered_courses' %}active{% endif %}">
+                    <i class="bi bi-circle"></i><span>My Registered Courses</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </li><!-- End Courses Nav -->
+
+    {# Materials & Assignments #}
+    <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.app_name == 'materials' and 'student' in request.resolver_match.url_name %}active{% else %}collapsed{% endif %}" data-bs-target="#materials-assignments-nav" data-bs-toggle="collapse" href="#">
+            <i class="bi bi-book"></i><span>Learning</span><i class="bi bi-chevron-down ms-auto"></i>
+        </a>
+        <ul id="materials-assignments-nav" class="nav-content collapse {% if request.resolver_match.app_name == 'materials' and 'student' in request.resolver_match.url_name %}show{% endif %}" data-bs-parent="#sidebar-nav">
+            {% if perms.materials.view_classmaterial %}
+            <li>
+                <a href="{% url 'materials:student_material_list' %}" class="{% if request.resolver_match.url_name == 'student_material_list' %}active{% endif %}">
+                    <i class="bi bi-circle"></i><span>Course Materials</span>
+                </a>
+            </li>
+            {% endif %}
+            {% if perms.materials.view_assignment %}
+            <li>
+                <a href="{% url 'materials:student_assignment_list' %}" class="{% if 'student_assignment' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-circle"></i><span>Assignments</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </li><!-- End Learning Nav -->
+
+     {# Results #}
+    <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.app_name == 'results' and 'student' in request.resolver_match.url_name %}active{% else %}collapsed{% endif %}" data-bs-target="#results-nav" data-bs-toggle="collapse" href="#">
+            <i class="bi bi-bar-chart-line"></i><span>Results</span><i class="bi bi-chevron-down ms-auto"></i>
+        </a>
+        <ul id="results-nav" class="nav-content collapse {% if request.resolver_match.app_name == 'results' and 'student' in request.resolver_match.url_name %}show{% endif %}" data-bs-parent="#sidebar-nav">
+            {% if perms.results.view_result %}
+            <li>
+                <a href="{% url 'results:student_result' %}" class="{% if request.resolver_match.url_name == 'student_result' %}active{% endif %}">
+                    <i class="bi bi-circle"></i><span>View Results</span>
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'results:student_transcript' %}" class="{% if request.resolver_match.url_name == 'student_transcript' %}active{% endif %}">
+                    <i class="bi bi-circle"></i><span>View Transcript</span>
+                </a>
+            </li>
+             <li>
+                <a href="{% url 'admissions:admission_letter_download' %}" target="_blank"> {# Opens in new tab #}
+                    <i class="bi bi-circle"></i><span>Admission Letter</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </li><!-- End Results Nav -->
+
+     {# Attendance #}
+     <li class="nav-item">
+        {% if perms.attendance.view_attendancerecord %}
+        <a class="nav-link {% if request.resolver_match.url_name == 'student_attendance' %}active{% else %}collapsed{% endif %}" href="{% url 'attendance:student_attendance' %}">
+            <i class="bi bi-calendar-check"></i>
+            <span>My Attendance</span>
+        </a>
+        {% endif %}
+    </li><!-- End Attendance Nav -->
+
+    {# Virtual Class #}
+    <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.app_name == 'virtual_class' and 'student' in request.resolver_match.url_name %}active{% else %}collapsed{% endif %}" data-bs-target="#virtual-nav" data-bs-toggle="collapse" href="#">
+             <i class="bi bi-display"></i><span>Virtual Class</span><i class="bi bi-chevron-down ms-auto"></i>
+        </a>
+        <ul id="virtual-nav" class="nav-content collapse {% if request.resolver_match.app_name == 'virtual_class' and 'student' in request.resolver_match.url_name %}show{% endif %}" data-bs-parent="#sidebar-nav">
+            {% if perms.virtual_class.view_classrecording %}
+            <li>
+                <a href="{% url 'virtual_class:student_recording_list' %}" class="{% if 'student_recording' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-circle"></i><span>Class Recordings</span>
+                </a>
+            </li>
+             {% endif %}
+              {% if perms.virtual_class.view_whiteboard %}
+             <li>
+                 {# Link to a page listing available whiteboards, not directly to one #}
+                 {# Assuming a student_whiteboard_list view might be added later #}
+                 {# Or link to dashboard / course page where whiteboards are listed #}
+                 <a href="#" class="disabled"> {# Placeholder #}
+                    <i class="bi bi-circle"></i><span>Whiteboards (View)</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </li><!-- End Virtual Class Nav -->
+
+    <li class="nav-heading">Account</li>
+
+    <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'profile' %}active{% else %}collapsed{% endif %}" href="{% url 'accounts:profile' %}">
+            <i class="bi bi-person"></i>
+            <span>My Profile</span>
+        </a>
+    </li><!-- End Profile Page Nav -->
+
+     <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'change_password' %}active{% else %}collapsed{% endif %}" href="{% url 'accounts:change_password' %}">
+            <i class="bi bi-key"></i>
+            <span>Change Password</span>
+        </a>
+    </li>
+
+     <li class="nav-item">
+        <a class="nav-link {% if request.resolver_match.url_name == 'request_password_change' %}active{% else %}collapsed{% endif %}" href="{% url 'accounts:request_password_change' %}">
+            <i class="bi bi-shield-lock"></i>
+            <span>Request Password Reset</span>
+        </a>
+    </li>
+
+    <li class="nav-item">
+        <a class="nav-link collapsed" href="{% url 'accounts:logout' %}">
+            <i class="bi bi-box-arrow-right"></i>
+            <span>Logout</span>
+        </a>
+    </li><!-- End Logout Nav -->
+
+</ul>
+{% endblock %}

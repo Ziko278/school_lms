@@ -1,0 +1,115 @@
+{% extends 'base/base_student.html' %}
+{% load static %}
+{% load humanize %}
+{% load widget_tweaks %}
+
+{% block title %}Class Recordings | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Class Recordings</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item active">Recordings</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-12">
+
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Available Recordings for Your Courses</h5>
+
+                    {% include 'components/alerts.html' %}
+
+                    <!-- Filter Form -->
+                    <form method="get" class="row g-2 mb-3 align-items-end">
+                        <div class="col-md-5">
+                            <label for="course" class="form-label form-label-sm visually-hidden">Filter by Course</label>
+                            <select id="course" name="course" class="form-select form-select-sm">
+                                <option value="">Filter by Course...</option>
+                                {% for course in student_courses %}
+                                <option value="{{ course.id }}" {% if course.id|stringformat:"s" == selected_course %}selected{% endif %}>
+                                    {{ course.code }} - {{ course.title }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                             <button type="submit" class="btn btn-secondary btn-sm w-100"><i class="bi bi-filter"></i> Filter</button>
+                        </div>
+                         <div class="col-md-2">
+                             <a href="{% url 'virtual_class:student_recording_list' %}" class="btn btn-outline-secondary btn-sm w-100">Clear</a>
+                         </div>
+                    </form>
+
+                    <!-- Recordings List/Cards -->
+                    {% if recordings_page %}
+                    <div class="row">
+                        {% for recording in recordings_page %}
+                         <div class="col-lg-4 col-md-6 mb-4 d-flex align-items-stretch">
+                             <div class="card h-100 shadow-sm recording-card">
+                                 <div class="card-body">
+                                      <div class="d-flex justify-content-between align-items-start mt-3">
+                                          <h6 class="card-title pt-0 pb-1 flex-grow-1">
+                                             <a href="{% url 'virtual_class:student_recording_view' recording.id %}" class="text-dark stretched-link">
+                                                 {{ recording.title|truncatechars:50 }}
+                                             </a>
+                                          </h6>
+                                          {% if recording.recording_file %}
+                                             <i class="bi bi-file-earmark-play h5 text-primary ms-2" title="File Upload"></i>
+                                         {% elif recording.recording_link %}
+                                             <i class="bi bi-link-45deg h5 text-info ms-2" title="External Link"></i>
+                                         {% endif %}
+                                      </div>
+                                     <p class="small text-muted mb-1">{{ recording.course_allocation.course.code }}</p>
+                                     <p class="small mb-2">Recorded: {{ recording.date_recorded|date:"M d, Y" }} | Duration: {{ recording.duration|default:"N/A" }}</p>
+                                      {% if recording.notes %}
+                                        <p class="card-text small fst-italic text-muted">{{ recording.notes|truncatechars:100 }}</p>
+                                      {% endif %}
+                                      {# Stretched link covers the card #}
+                                 </div>
+                             </div>
+                         </div>
+                         {% endfor %}
+                    </div>
+
+                    {% include 'components/pagination.html' with page_obj=recordings_page %}
+
+                    {% else %}
+                    <div class="alert alert-light text-center mt-3" role="alert">
+                        No recordings found for your registered courses{% if selected_course %} matching the selected filter{% endif %}.
+                    </div>
+                    {% endif %}
+                    <!-- End Recordings List/Cards -->
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<style>
+.recording-card .card-title a {
+    text-decoration: none;
+}
+.recording-card .card-title a:hover {
+    color: var(--bs-primary);
+}
+.recording-card {
+    transition: transform 0.2s ease-in-out;
+}
+.recording-card:hover {
+     transform: translateY(-5px);
+     box-shadow: 0 .5rem 1rem rgba(0,0,0,.10)!important;
+}
+</style>
+{% endblock %}
+

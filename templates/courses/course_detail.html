@@ -1,0 +1,184 @@
+{% extends 'base/base_admin.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ course.code }} - {{ course.title }} | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>{{ course.code }} - {{ course.title }}</h1>
+     <nav>
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="{% url 'admin_site:admin_dashboard' %}">Home</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'academics:department_list' %}">Academics</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'courses:course_list' %}">Courses</a></li>
+          <li class="breadcrumb-item active">{{ course.code }}</li>
+        </ol>
+      </nav>
+</div><!-- End Page Title -->
+
+<section class="section profile"> {# Reusing profile section style #}
+    <div class="row">
+        <div class="col-xl-4">
+             <div class="card">
+                <div class="card-body profile-card pt-4 d-flex flex-column">
+                    <h5 class="card-title pb-0">{{ course.code }}</h5>
+                    <h6>{{ course.title }}</h6>
+                    <p class="small text-muted mb-1">Department: <a href="{% url 'academics:department_detail' course.department.id %}">{{ course.department.name }}</a></p>
+                    <p class="small text-muted mb-1">Level: <a href="{% url 'academics:level_list' %}?program={{ course.level.program.id }}">{{ course.level.name }}</a></p>
+                    <p class="small text-muted mb-1">Credit Units: {{ course.credit_units }}</p>
+                    <p class="small text-muted mb-1">Semester: {{ course.get_semester_offered_display }}</p>
+                    <p class="small text-muted mb-3">Type: {% if course.is_elective %}Elective{% else %}Core{% endif %}</p>
+                     <p class="small">{{ course.description|default:"No description provided."|linebreaksbr }}</p>
+                 </div>
+            </div>
+        </div>
+
+        <div class="col-xl-8">
+            <div class="card">
+                <div class="card-body pt-3">
+                    <!-- Bordered Tabs -->
+                    <ul class="nav nav-tabs nav-tabs-bordered">
+                        <li class="nav-item">
+                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#course-allocations">Allocations</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#course-registrations">Registrations</button>
+                        </li>
+                         <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#course-prerequisites">Prerequisites</button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content pt-3">
+
+                        <!-- Allocations Tab -->
+                         <div class="tab-pane fade show active" id="course-allocations">
+                            <h5 class="card-title">Course Allocations (Recent 5)</h5>
+                             {% if current_allocations %}
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Session</th>
+                                                <th>Semester</th>
+                                                <th>Lecturer</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for alloc in current_allocations %}
+                                            <tr>
+                                                <td>{{ alloc.session.name }}</td>
+                                                <td>{{ alloc.semester.get_name_display }}</td>
+                                                <td>
+                                                    <a href="{% url 'accounts:staff_detail' alloc.lecturer.id %}">{{ alloc.lecturer.user.get_full_name }}</a>
+                                                </td>
+                                                <td>
+                                                     <form action="{% url 'courses:allocation_delete' alloc.id %}" method="post" class="d-inline needs-confirmation" data-confirm-message="Remove allocation for {{ alloc.lecturer.user.get_full_name }}?">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-danger btn-sm" title="Remove Allocation"><i class="bi bi-x-lg"></i></button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <a href="{% url 'courses:allocation_list' %}?course={{ course.id }}" class="btn btn-link btn-sm">View All Allocations</a>
+                             {% else %}
+                                <p class="text-muted">No allocations found for this course recently.</p>
+                             {% endif %}
+                             <a href="{% url 'courses:allocation_create' %}?course={{ course.id }}" class="btn btn-primary btn-sm mt-3"><i class="bi bi-person-plus"></i> Allocate Course</a>
+                        </div>
+
+                         <!-- Registrations Tab -->
+                        <div class="tab-pane fade" id="course-registrations">
+                             <h5 class="card-title">Student Registrations</h5>
+                              <p>Total approved registrations for current session/semester: <strong>{{ registered_count|intcomma }}</strong></p>
+                              <a href="{% url 'courses:registration_list' %}?course={{ course.id }}" class="btn btn-link btn-sm">View Registration Details</a>
+                        </div>
+
+                        <!-- Prerequisites Tab -->
+                        <div class="tab-pane fade" id="course-prerequisites">
+                            <h5 class="card-title">Prerequisites</h5>
+                            {% if prerequisites %}
+                                <ul class="list-group list-group-flush">
+                                    {% for pre in prerequisites %}
+                                    <li class="list-group-item">
+                                        <a href="{% url 'courses:course_detail' pre.id %}">{{ pre.code }} - {{ pre.title }}</a>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <p class="text-muted">This course has no prerequisites.</p>
+                            {% endif %}
+
+                            <h5 class="card-title mt-4">Required For</h5>
+                            {% if required_for %}
+                                 <ul class="list-group list-group-flush">
+                                    {% for req in required_for %}
+                                    <li class="list-group-item">
+                                        <a href="{% url 'courses:course_detail' req.id %}">{{ req.code }} - {{ req.title }}</a>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <p class="text-muted">No other courses require this course as a prerequisite.</p>
+                            {% endif %}
+                        </div>
+
+
+                    </div><!-- End Bordered Tabs -->
+
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-end">
+                         <a href="{% url 'courses:course_edit' course.id %}" class="btn btn-warning me-2"><i class="bi bi-pencil-square"></i> Edit Course</a>
+                         <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteCourseDetailModal">
+                             <i class="bi bi-trash"></i> Delete Course
+                         </button>
+                     </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteCourseDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h5 class="modal-title">Confirm Deletion</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+            Are you sure you want to delete the course <strong>{{ course.code }} - {{ course.title }}</strong>?
+            <br><small class="text-danger">This action cannot be undone. Ensure there are no student registrations or allocations linked to this course.</small>
+            </div>
+            <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <form action="{% url 'courses:course_delete' course.id %}" method="post" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Delete Course</button>
+            </form>
+            </div>
+        </div>
+    </div>
+</div><!-- End Delete Modal -->
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Add confirmation prompt for inline delete forms
+document.querySelectorAll('.needs-confirmation').forEach(form => {
+    form.addEventListener('submit', function(event) {
+        const message = this.dataset.confirmMessage || 'Are you sure you want to proceed?';
+        if (!confirm(message)) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+    });
+});
+</script>
+{% endblock %}

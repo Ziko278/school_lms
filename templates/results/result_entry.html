@@ -1,0 +1,366 @@
+{% extends 'base/base_staff.html' %}
+{% load static %}
+{% load humanize %}
+{% load result_extras %}
+{% load widget_tweaks %}
+
+{% block title %}Enter Results: {{ allocation.course.code }} | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Enter Results</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'results:result_entry_list' %}">Result Entry</a></li>
+            <li class="breadcrumb-item active">{{ allocation.course.code }}</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-12">
+
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Enter Results for {{ allocation.course.code }} - {{ allocation.course.title }}</h5>
+                     <p>Session: {{ allocation.session.name }} | Semester: {{ allocation.semester.get_name_display }}</p>
+                     <p class="text-muted small">Enter Continuous Assessment (CA) scores (Max 40) and Exam scores (Max 60). Total and Grade are calculated automatically. Use the 'Save' icon <i class="bi bi-save text-primary"></i> to save individual rows (auto-saves on change), or use the 'Save All Drafts' button. Submit only when all results are entered and saved.</p>
+
+                    {% include 'components/alerts.html' %}
+
+                    <!-- Result Entry Form -->
+                    <form method="POST" action="" class="needs-validation" id="resultEntryForm" novalidate>
+                        {% csrf_token %}
+
+                        <div class="table-responsive mt-3">
+                            <table class="table table-sm table-striped table-hover" id="resultEntryTable">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Matric No.</th>
+                                        <th>Name</th>
+                                        <th style="width: 10%;">CA (40)</th>
+                                        <th style="width: 10%;">Exam (60)</th>
+                                        <th style="width: 8%;">Total</th>
+                                        <th style="width: 8%;">Grade</th>
+                                        <th>Remarks</th>
+                                        <th style="width: 5%;">Status</th>
+                                        {# <th style="width: 5%;">Save</th> #}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for registration in registrations %}
+    {% with result=existing_results|get_item:registration.student.id %}
+    <tr id="row-{{ registration.student.id }}" data-student-id="{{ registration.student.id }}">
+        <td>{{ forloop.counter }}</td>
+        <td>{{ registration.student.matric_number }}</td>
+        <td>{{ registration.student.user.get_full_name }}</td>
+        <td>
+            <input type="number" step="0.01" min="0" max="40"
+                   class="form-control form-control-sm score-input ca-score"
+                   name="ca_score_{{ registration.student.id }}"
+                   value="{{ result.ca_score|default_if_none:"" }}"
+                   {% if result.status == 'verified' or result.status == 'pending' %}readonly{% endif %}
+                   required>
+            <div class="invalid-feedback small">0-40</div>
+        </td>
+        <td>
+             <input type="number" step="0.01" min="0" max="60"
+                   class="form-control form-control-sm score-input exam-score"
+                   name="exam_score_{{ registration.student.id }}"
+                   value="{{ result.exam_score|default_if_none:"" }}"
+                    {% if result.status == 'verified' or result.status == 'pending' %}readonly{% endif %}
+                   required>
+             <div class="invalid-feedback small">0-60</div>
+        </td>
+        <td class="total-score text-center fw-bold">{{ result.total_score|default_if_none:"-" }}</td>
+        <td class="grade text-center fw-bold">{{ result.grade|default_if_none:"-" }}</td>
+        <td>
+            <input type="text"
+                   class="form-control form-control-sm remarks-input"
+                   name="remarks_{{ registration.student.id }}"
+                   value="{{ result.remarks|default_if_none:"" }}"
+                   {% if result.status == 'verified' or result.status == 'pending' %}readonly{% endif %}
+                   placeholder="Optional remarks...">
+        </td>
+         <td class="status-indicator text-center small">
+             {% if result.status == 'verified' %}
+                <i class="bi bi-check-circle-fill text-success" title="Verified"></i>
+             {% elif result.status == 'pending' %}
+                <i class="bi bi-hourglass-split text-warning" title="Pending Verification"></i>
+             {% elif result.status == 'rejected' %}
+                 <i class="bi bi-x-octagon-fill text-danger" title="Rejected - Edit Needed"></i>
+             {% elif result.status == 'draft' %}
+                 <i class="bi bi-pencil-fill text-info" title="Draft"></i>
+             {% else %}
+                 <i class="bi bi-dash-circle text-muted" title="Not Entered"></i>
+             {% endif %}
+        </td>
+    </tr>
+    {% endwith %}
+{% empty %}
+    <tr>
+        <td colspan="9" class="text-center text-muted fst-italic">
+           No students are registered for this course in the selected session/semester.
+        </td>
+    </tr>
+{% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                         <div class="text-center mt-4">
+                            {# Save All Drafts Button #}
+                            <button type="submit" class="btn btn-info" id="saveAllDraftsBtn">
+                                <i class="bi bi-save me-1"></i> Save All Drafts
+                            </button>
+
+                             {# Submit for Verification Button - Separate Form #}
+                            <button type="button" class="btn btn-primary" id="submitVerificationBtn" data-bs-toggle="modal" data-bs-target="#submitConfirmModal" {% if not registrations or existing_results|length < registrations|length %}disabled{% endif %}>
+                                <i class="bi bi-send-check me-1"></i> Submit for Verification
+                            </button>
+
+                            <a href="{% url 'results:result_entry_list' %}" class="btn btn-secondary">Back to List</a>
+                        </div>
+
+                    </form><!-- End Result Entry Form -->
+
+                    <!-- Submit Confirmation Modal -->
+                    <div class="modal fade" id="submitConfirmModal" tabindex="-1" aria-labelledby="submitModalLabel" aria-hidden="true">
+                      <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <h5 class="modal-title" id="submitModalLabel">Confirm Submission</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                          </div>
+                          <div class="modal-body">
+                            Are you sure you want to submit all entered results for verification? Ensure all scores are correct. Draft results will be marked as 'Pending'. Verified or already pending results will not be affected.
+                             <p class="text-warning small mt-2"><i class="bi bi-exclamation-triangle me-1"></i>You cannot edit results after submitting them unless they are rejected by the verifier.</p>
+                          </div>
+                          <div class="modal-footer">
+                             <form method="POST" action="{% url 'results:result_submit' allocation.id %}">
+                                 {% csrf_token %}
+                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                 <button type="submit" class="btn btn-primary">Yes, Submit Results</button>
+                             </form>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+{# Template Tag for dictionary get needed:
+from django import template
+register = template.Library()
+
+@register.filter
+def get_item(dictionary, key):
+    return dictionary.get(key)
+#}
+<script>
+(function () {
+  'use strict';
+  // Standard Bootstrap validation setup for inputs
+  var forms = document.querySelectorAll('.needs-validation');
+  Array.prototype.slice.call(forms).forEach(function (form) {
+    form.addEventListener('submit', function (event) {
+      if (!form.checkValidity()) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      form.classList.add('was-validated');
+    }, false);
+  });
+
+  const resultTableBody = document.querySelector('#resultEntryTable tbody');
+  const saveAllBtn = document.getElementById('saveAllDraftsBtn');
+  const submitVerificationBtn = document.getElementById('submitVerificationBtn');
+  let saveTimeout = null;
+
+  // Function to calculate and update total/grade
+  function updateRowCalculations(row) {
+      const caInput = row.querySelector('.ca-score');
+      const examInput = row.querySelector('.exam-score');
+      const totalCell = row.querySelector('.total-score');
+      const gradeCell = row.querySelector('.grade');
+
+      const caScore = parseFloat(caInput.value);
+      const examScore = parseFloat(examInput.value);
+
+      if (!isNaN(caScore) && !isNaN(examScore) && caScore >= 0 && caScore <= 40 && examScore >= 0 && examScore <= 60) {
+          const total = caScore + examScore;
+          totalCell.textContent = total.toFixed(1);
+
+          let grade = 'F';
+          if (total >= 70) grade = 'A';
+          else if (total >= 60) grade = 'B';
+          else if (total >= 50) grade = 'C';
+          else if (total >= 45) grade = 'D';
+          else if (total >= 40) grade = 'E';
+          gradeCell.textContent = grade;
+          // Input validation state
+          caInput.classList.remove('is-invalid');
+          examInput.classList.remove('is-invalid');
+          return true; // Valid scores entered
+      } else {
+          totalCell.textContent = '-';
+          gradeCell.textContent = '-';
+          // Input validation state (Bootstrap handles required, but check range)
+          if (isNaN(caScore) || caScore < 0 || caScore > 40) caInput.classList.add('is-invalid'); else caInput.classList.remove('is-invalid');
+          if (isNaN(examScore) || examScore < 0 || examScore > 60) examInput.classList.add('is-invalid'); else examInput.classList.remove('is-invalid');
+          return false; // Invalid or incomplete scores
+      }
+  }
+
+  // Function to save a single row via AJAX
+  function saveRow(row) {
+    if (!updateRowCalculations(row)) {
+        console.warn("Skipping save due to invalid scores for student:", row.dataset.studentId);
+        // Maybe add a visual indicator that save is blocked
+        return; // Don't save if scores are invalid/incomplete
+    }
+    const studentId = row.dataset.studentId;
+    const caScore = row.querySelector('.ca-score').value;
+    const examScore = row.querySelector('.exam-score').value;
+    const remarks = row.querySelector('.remarks-input').value;
+    const statusIndicator = row.querySelector('.status-indicator');
+
+    // Show saving indicator
+    statusIndicator.innerHTML = `<div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Saving...</span></div>`;
+
+    const formData = new FormData();
+    formData.append('student_id', studentId);
+    formData.append('course_id', '{{ allocation.course.id }}');
+    formData.append('session_id', '{{ allocation.session.id }}');
+    formData.append('semester_id', '{{ allocation.semester.id }}');
+    formData.append('ca_score', caScore);
+    formData.append('exam_score', examScore);
+    formData.append('remarks', remarks);
+
+    fetch("{% url 'results:save_result_ajax' %}", {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update UI with saved status
+            statusIndicator.innerHTML = `<i class="bi bi-pencil-fill text-info" title="Draft"></i>`; // Mark as Draft
+            // Update calculated fields just in case backend logic differs slightly
+            row.querySelector('.total-score').textContent = data.total_score.toFixed(1);
+            row.querySelector('.grade').textContent = data.grade;
+            // Maybe a temporary success indicator
+            const check = document.createElement('i');
+            check.className = 'bi bi-check-lg text-success ms-1';
+            statusIndicator.appendChild(check);
+            setTimeout(() => check.remove(), 1500);
+
+            // Re-evaluate if Submit button should be enabled
+             checkEnableSubmitButton();
+
+        } else {
+            console.error('Save failed:', data.message);
+            statusIndicator.innerHTML = `<i class="bi bi-exclamation-triangle-fill text-danger" title="Save Error: ${data.message}"></i>`;
+        }
+    })
+    .catch(error => {
+        console.error('Save error:', error);
+        statusIndicator.innerHTML = `<i class="bi bi-exclamation-triangle-fill text-danger" title="Save Error: Network or server issue"></i>`;
+    });
+  }
+
+  // Add event listeners for auto-calculation and auto-save
+  resultTableBody.addEventListener('input', function(event) {
+      if (event.target.classList.contains('score-input') || event.target.classList.contains('remarks-input')) {
+          const row = event.target.closest('tr');
+          if (row) {
+              updateRowCalculations(row);
+
+               // Debounce auto-save
+               clearTimeout(saveTimeout);
+               saveTimeout = setTimeout(() => {
+                  // Only save if scores are valid and row is not read-only
+                  const caInput = row.querySelector('.ca-score');
+                  if (!caInput.readOnly) { // Check if editable
+                     saveRow(row);
+                  }
+               }, 1000); // Save 1 second after last input
+          }
+      }
+  });
+
+   // Initial calculation for all rows on page load
+   resultTableBody.querySelectorAll('tr[data-student-id]').forEach(row => {
+       updateRowCalculations(row);
+   });
+
+   // Check if Submit button should be enabled
+   function checkEnableSubmitButton() {
+       const totalRows = resultTableBody.querySelectorAll('tr[data-student-id]').length;
+       const savedDraftOrPendingCount = resultTableBody.querySelectorAll('.bi-pencil-fill, .bi-hourglass-split, .bi-check-circle-fill').length; // Count saved drafts, pending, or verified
+
+       if (totalRows > 0 && savedDraftOrPendingCount >= totalRows) {
+           submitVerificationBtn.disabled = false;
+       } else {
+           submitVerificationBtn.disabled = true;
+       }
+   }
+   // Initial check
+   checkEnableSubmitButton();
+
+
+  // Save All Drafts button functionality (triggers POST submit of the main form)
+  // The backend view needs to handle saving all rows submitted this way.
+   saveAllBtn.addEventListener('click', function(event) {
+       event.preventDefault(); // Prevent default if it was type="submit" initially
+       // Add validation if needed before submitting
+       const form = document.getElementById('resultEntryForm');
+       if (form.checkValidity()) {
+           // Maybe show a spinner
+           saveAllBtn.disabled = true;
+           saveAllBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Saving...`;
+           form.submit(); // Submit the form to the regular view
+       } else {
+            form.classList.add('was-validated');
+            // Scroll to first invalid field maybe
+       }
+   });
+
+
+})();
+</script>
+<style>
+/* Ensure inputs don't become too wide */
+#resultEntryTable input[type=number],
+#resultEntryTable input[type=text] {
+    min-width: 60px;
+}
+#resultEntryTable .total-score, #resultEntryTable .grade {
+    font-size: 0.9em;
+}
+.status-indicator i {
+    font-size: 1.1em;
+    vertical-align: middle;
+}
+/* Style invalid inputs more clearly */
+.form-control.is-invalid {
+    background-image: none !important; /* Override default Bootstrap icon if needed */
+    border-color: var(--bs-danger);
+}
+</style>
+{% endblock %}

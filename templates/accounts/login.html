@@ -1,0 +1,135 @@
+{% extends 'base/base_admin.html' %} {# Using admin base for styling consistency, but without sidebar/header for login page #}
+{% load static %}
+
+{% block title %}Login | {{ school_info.school_name }}{% endblock %}
+
+{% block main %} {# Override the default body to remove sidebar/header for login page #}
+<body class="bg-light"> {# Use a light background for login page #}
+    <main>
+        <div class="container">
+
+            <section class="section register min-vh-100 d-flex flex-column align-items-center justify-content-center py-4">
+                <div class="container">
+                    <div class="row justify-content-center">
+                        <div class="col-lg-4 col-md-6 d-flex flex-column align-items-center justify-content-center">
+
+                            <div class="d-flex justify-content-center py-4">
+                                <a href="{% url 'website:home' %}" class="logo d-flex align-items-center w-auto">
+                                    {% if school_info.logo %}
+                                        <img src="{{ school_info.logo.url }}" alt="{{ school_info.school_name }}" style="max-height: 40px;">
+                                    {% endif %}
+                                    <span class="d-none d-lg-block ms-2">{{ school_info.school_name }}</span>
+                                </a>
+                            </div><!-- End Logo -->
+
+                            <div class="card mb-3 shadow-lg">
+
+                                <div class="card-body">
+
+                                    <div class="pt-4 pb-2">
+                                        <h5 class="card-title text-center pb-0 fs-4">Login to Your Account</h5>
+                                        <p class="text-center small">Enter your username & password to login</p>
+                                    </div>
+
+                                     {% include 'components/alerts.html' %} {# Display messages like invalid login #}
+
+                                    <form class="row g-3 needs-validation" method="POST" action="{% url 'accounts:login' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}" novalidate>
+                                        {% csrf_token %}
+
+                                        <div class="col-12">
+                                            <label for="yourUsername" class="form-label">{{ form.username.label }}</label>
+                                            <div class="input-group has-validation">
+                                                <span class="input-group-text" id="inputGroupPrepend"><i class="bi bi-person"></i></span>
+                                                {{ form.username }}
+                                                <div class="invalid-feedback">{{ form.username.errors|first|default:"Please enter your username." }}</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-12">
+                                            <label for="yourPassword" class="form-label">{{ form.password.label }}</label>
+                                             <div class="input-group has-validation">
+                                                <span class="input-group-text" id="inputGroupPrependPass"><i class="bi bi-lock"></i></span>
+                                                {{ form.password }}
+                                                <div class="invalid-feedback">{{ form.password.errors|first|default:"Please enter your password." }}</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-12 d-flex justify-content-between">
+                                            <div class="form-check">
+                                                 {# Django's form doesn't have a remember_me by default, assuming custom #}
+                                                <input class="form-check-input" type="checkbox" name="remember" value="true" id="rememberMe">
+                                                <label class="form-check-label" for="rememberMe">Remember me</label>
+                                            </div>
+                                            {# Link to password request only for students #}
+                                            <a href="{% url 'accounts:request_password_change' %}" class="small">Forgot password?</a>
+                                        </div>
+
+                                        {% if form.non_field_errors %}
+                                            <div class="col-12 text-center text-danger small">
+                                                {% for error in form.non_field_errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+
+                                        <div class="col-12">
+                                            <button class="btn btn-primary w-100" type="submit">Login</button>
+                                        </div>
+                                        <div class="col-12 text-center">
+                                            <p class="small mb-0">New student? <a href="{% url 'website:admission_portal' %}">Start Admission</a></p>
+                                        </div>
+                                    </form>
+
+                                </div>
+                            </div>
+
+                            <div class="credits text-center small text-muted">
+                                Designed based on <a href="https://bootstrapmade.com/" target="_blank" rel="noopener noreferrer">BootstrapMade</a>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main><!-- End #main -->
+
+     <a href="#" class="back-to-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
+
+    {% block extra_scripts %}
+        <!-- Vendor JS Files -->
+        <script src="{% static 'admin_site/vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+
+        <!-- Template Main JS File -->
+        <script src="{% static 'admin_site/scripts/main.js' %}"></script> {# Include main.js if needed for NiceAdmin features on login #}
+
+        {# Add form validation script if needed #}
+         <script>
+            // Example Bootstrap validation activation
+            (function () {
+              'use strict'
+
+              // Fetch all the forms we want to apply custom Bootstrap validation styles to
+              var forms = document.querySelectorAll('.needs-validation')
+
+              // Loop over them and prevent submission
+              Array.prototype.slice.call(forms)
+                .forEach(function (form) {
+                  form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                      event.preventDefault()
+                      event.stopPropagation()
+                    }
+
+                    form.classList.add('was-validated')
+                  }, false)
+                })
+            })()
+        </script>
+    {% endblock %}
+</body>
+{% endblock %}
+
+{% block header %}{% endblock %} {# Empty header block to hide it #}
+{% block sidebar %}{% endblock %} {# Empty sidebar block to hide it #}
+{% block footer %}{% endblock %} {# Empty footer block to hide it #}

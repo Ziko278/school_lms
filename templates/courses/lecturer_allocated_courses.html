@@ -1,0 +1,140 @@
+{% extends 'base/base_staff.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}My Allocated Courses | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>My Allocated Courses</h1>
+     <nav>
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">Dashboard</a></li>
+          <li class="breadcrumb-item active">My Courses</li>
+        </ol>
+      </nav>
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-12">
+
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">View Allocated Courses</h5>
+
+                    {% include 'components/alerts.html' %}
+
+                    <!-- Filter Form -->
+                    <form method="get" class="row g-3 mb-4 align-items-end">
+                        <div class="col-md-5">
+                            <label for="session" class="form-label form-label-sm">Session</label>
+                            <select id="session" name="session" class="form-select form-select-sm">
+                                <option value="">All History</option>
+                                {% for sess in sessions %}
+                                <option value="{{ sess.id }}" {% if sess.id == selected_session %}selected{% endif %}>{{ sess.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <label for="semester" class="form-label form-label-sm">Semester</label>
+                            <select id="semester" name="semester" class="form-select form-select-sm">
+                                <option value="">All</option>
+                                {% for sem in semesters %}
+                                {# Ideally filter by session selection via JS #}
+                                <option value="{{ sem.id }}" data-session-id="{{ sem.session.id }}" {% if sem.id == selected_semester %}selected{% endif %}>{{ sem.get_name_display }} ({{ sem.session.name }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                             <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-filter"></i> Filter</button>
+                        </div>
+                    </form>
+                     <hr>
+
+                    <!-- Allocated Courses Cards -->
+                    <div class="row">
+                        {% for alloc in allocations %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                             <div class="card h-100 shadow-sm course-card">
+                                <div class="card-body p-3 d-flex flex-column">
+                                    <h5 class="card-title p-0 m-0 fs-6">
+                                        {{ alloc.course.code }} - {{ alloc.course.title }}
+                                    </h5>
+                                    <p class="small text-muted mb-2">
+                                        {{ alloc.session.name }} | {{ alloc.semester.get_name_display }} | {{ alloc.course.credit_units }} Units
+                                    </p>
+                                    <p class="small mb-3">
+                                        <i class="bi bi-people-fill me-1"></i> {{ alloc.enrolled_count|default:0 }} Student{{ alloc.enrolled_count|pluralize }} Enrolled
+                                    </p>
+
+                                    <div class="mt-auto pt-2 border-top">
+                                        <div class="d-grid gap-1 d-md-flex justify-content-md-start">
+                                            {# Link to view students for this allocation - requires a new view/URL #}
+                                            {# <a href="#" class="btn btn-outline-secondary btn-sm" title="View Students"><i class="bi bi-people"></i></a> #}
+
+                                            <a href="{% url 'materials:material_upload' %}?course_allocation={{ alloc.id }}" class="btn btn-outline-info btn-sm" title="Upload Material"><i class="bi bi-upload"></i> Mat</a>
+                                            <a href="{% url 'attendance:attendance_create' %}?course_allocation={{ alloc.id }}" class="btn btn-outline-warning btn-sm" title="Mark Attendance"><i class="bi bi-calendar-check"></i> Att</a>
+                                             <a href="{% url 'results:result_entry' alloc.id %}" class="btn btn-outline-success btn-sm" title="Enter Results"><i class="bi bi-pencil-square"></i> Res</a>
+                                             {# Add View Materials link #}
+                                             <a href="{% url 'materials:material_list' %}?course={{ alloc.course.id }}" class="btn btn-outline-primary btn-sm" title="View Materials"><i class="bi bi-folder2-open"></i> View</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12">
+                             <div class="alert alert-secondary text-center" role="alert">
+                                No courses allocated to you for the selected period.
+                             </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <!-- End Allocated Courses Cards -->
+
+                     {# Add pagination if allocations object is paginated #}
+                     {# {% include 'components/pagination.html' with page_obj=allocations %} #}
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Optional: JavaScript to filter semesters based on selected session
+    const sessionSelect = document.getElementById('session');
+    const semesterSelect = document.getElementById('semester');
+    if (sessionSelect && semesterSelect) {
+        const originalSemesterOptions = Array.from(semesterSelect.options);
+        sessionSelect.addEventListener('change', function() {
+            const selectedSessionId = this.value;
+            semesterSelect.innerHTML = '';
+            semesterSelect.appendChild(originalSemesterOptions[0]); // Add "All" back
+
+            if (selectedSessionId) {
+                originalSemesterOptions.forEach(option => {
+                    if (option.value && option.dataset.sessionId === selectedSessionId) {
+                         semesterSelect.appendChild(option.cloneNode(true));
+                    }
+                });
+            } else {
+                 originalSemesterOptions.slice(1).forEach(option => {
+                     semesterSelect.appendChild(option.cloneNode(true));
+                 });
+            }
+             // Restore previous selection if valid
+             const previouslySelected = '{{ selected_semester|default:"" }}';
+             if (previouslySelected && semesterSelect.querySelector(`option[value="${previouslySelected}"]`)) {
+                 semesterSelect.value = previouslySelected;
+             }
+        });
+         // Trigger on load
+         sessionSelect.dispatchEvent(new Event('change'));
+    }
+</script>
+{% endblock %}

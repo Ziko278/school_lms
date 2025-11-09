@@ -1,0 +1,173 @@
+{% extends 'base/base_student.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Register Courses | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Register Courses</h1>
+    <nav>
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">Dashboard</a></li>
+          <li class="breadcrumb-item active">Course Registration</li>
+        </ol>
+      </nav>
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-12">
+
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Register Courses for {{ current_semester }} ({{ current_session }})</h5>
+
+                    {% include 'components/alerts.html' %}
+
+                    {% if current_semester.registration_start_date and current_semester.registration_end_date %}
+                        <div class="alert alert-info small">
+                            Registration Period: {{ current_semester.registration_start_date|date:"M d, Y" }} - {{ current_semester.registration_end_date|date:"M d, Y" }}.
+                            You are currently in <strong>{{ student.current_level.name }}</strong>, <strong>{{ student.department.name }}</strong>.
+                            {# Add Max Credit Units info if available #}
+                        </div>
+                    {% endif %}
+
+                    <form method="post" action="{% url 'courses:student_register' %}" id="registrationForm">
+                        {% csrf_token %}
+
+                        <div class="row mb-3">
+                            <h6 class="mb-3">Available Courses for {{ student.current_level.name }}</h6>
+                             {% for course in available_courses %}
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="card h-100 course-card {% if course.id in registered_course_ids %}border-secondary{% else %}border-primary{% endif %}">
+                                        <div class="card-body p-3">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                 <h5 class="card-title p-0 m-0 fs-6">
+                                                     {{ course.code }} - {{ course.title }}
+                                                     <span class="badge bg-light text-dark ms-1">{{ course.credit_units }} Unit{{ course.credit_units|pluralize }}</span>
+                                                     {% if course.is_elective %}<span class="badge bg-info ms-1">Elective</span>{% endif %}
+                                                 </h5>
+                                                 <div class="form-check">
+                                                    <input class="form-check-input course-checkbox"
+                                                           type="checkbox"
+                                                           name="courses"
+                                                           value="{{ course.id }}"
+                                                           id="course_{{ course.id }}"
+                                                           data-units="{{ course.credit_units }}"
+                                                           {% if course.id in registered_course_ids %}disabled{% endif %}
+                                                           {% comment %} Add logic here to disable if prerequisites not met {% endcomment %}>
+                                                </div>
+                                            </div>
+
+                                            {% if course.id in registered_course_ids %}
+                                                <small class="text-secondary d-block mt-1"><i class="bi bi-info-circle me-1"></i> Already registered (Pending/Approved)</small>
+                                            {% endif %}
+
+                                             <p class="small text-muted mt-2 mb-1">
+                                                 Level: {{ course.level.name }} | Dept: {{ course.department.code }}
+                                                 {# Add Lecturer if available #}
+                                             </p>
+                                             {% if course.prerequisites.all %}
+                                                <p class="small text-warning mb-0">
+                                                    <i class="bi bi-exclamation-triangle"></i> Prerequisites:
+                                                    {% for pre in course.prerequisites.all %}
+                                                        {{ pre.code }}{% if not forloop.last %}, {% endif %}
+                                                    {% endfor %}
+                                                </p>
+                                             {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% empty %}
+                                <div class="col-12">
+                                    <p class="text-muted">No courses available for your level and department this semester, or registration is not open.</p>
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <hr>
+
+                        <div class="row align-items-center">
+                             <div class="col-md-6">
+                                <h6 class="mb-0">Selected Courses: <span id="selected-count">0</span></h6>
+                                <h6 class="mb-0">Total Credit Units: <span id="selected-units">0</span></h6>
+                                {# Display Max Credit Units if available #}
+                            </div>
+                            <div class="col-md-6 text-md-end mt-2 mt-md-0">
+                                 <button type="submit" class="btn btn-primary" id="registerButton" disabled><i class="bi bi-check2-circle me-1"></i> Register Selected Courses</button>
+                            </div>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('.course-checkbox');
+    const selectedCountSpan = document.getElementById('selected-count');
+    const selectedUnitsSpan = document.getElementById('selected-units');
+    const registerButton = document.getElementById('registerButton');
+    // const maxUnits = 24; // TODO: Get max units from context
+
+    function updateTotal() {
+        let count = 0;
+        let units = 0;
+        checkboxes.forEach(cb => {
+            if (cb.checked) {
+                count++;
+                units += parseInt(cb.dataset.units, 10);
+            }
+        });
+        selectedCountSpan.textContent = count;
+        selectedUnitsSpan.textContent = units;
+
+        // Enable/disable button
+        registerButton.disabled = count === 0; // || units > maxUnits;
+
+        // Optionally add warning if units exceed max
+        // if (units > maxUnits) {
+        //     selectedUnitsSpan.classList.add('text-danger');
+        // } else {
+        //     selectedUnitsSpan.classList.remove('text-danger');
+        // }
+    }
+
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', updateTotal);
+    });
+
+    // Initial calculation in case some are pre-checked (e.g., if form reloads with errors)
+    updateTotal();
+
+    // Form submission confirmation
+    const registrationForm = document.getElementById('registrationForm');
+    registrationForm.addEventListener('submit', function(event) {
+        const count = parseInt(selectedCountSpan.textContent, 10);
+        const units = parseInt(selectedUnitsSpan.textContent, 10);
+        if (count === 0) {
+            alert('Please select at least one course.');
+            event.preventDefault();
+            return;
+        }
+        // if (units > maxUnits) {
+        //     if (!confirm(`Warning: You have selected ${units} credit units, which exceeds the maximum of ${maxUnits}. Proceed anyway?`)) {
+        //         event.preventDefault();
+        //         return;
+        //     }
+        // }
+         if (!confirm(`You are about to register ${count} course(s) totaling ${units} credit units. Proceed?`)) {
+            event.preventDefault();
+        }
+    });
+
+});
+</script>
+{% endblock %}

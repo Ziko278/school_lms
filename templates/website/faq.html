@@ -1,0 +1,92 @@
+{% extends 'base/base_public.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}FAQ | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="bg-gray-100" x-data="{ searchTerm: '', activeCategory: 'All', filteredFaqs: [], allFaqs: {{ faqs|safe }} }" x-init="
+    filteredFaqs = allFaqs;
+    $watch('searchTerm', value => {
+        const term = value.toLowerCase();
+        filteredFaqs = allFaqs.filter(faq =>
+            (faq.question.toLowerCase().includes(term) || faq.answer.toLowerCase().includes(term)) &&
+            (activeCategory === 'All' || faq.category === activeCategory)
+        );
+    });
+    $watch('activeCategory', value => {
+         const term = searchTerm.toLowerCase();
+         filteredFaqs = allFaqs.filter(faq =>
+            (faq.question.toLowerCase().includes(term) || faq.answer.toLowerCase().includes(term)) &&
+            (value === 'All' || faq.category === value)
+        );
+    });
+">
+
+    <!-- Page Header -->
+    <section class="bg-primary text-white py-16">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            
+            <h1 class="text-4xl font-bold">Frequently Asked Questions</h1>
+            <p class="mt-2 text-lg">Find answers to common questions about admissions, academics, and more.</p>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="py-16">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+
+            <!-- Search and Filter -->
+            <div class="mb-12 max-w-2xl mx-auto">
+                <input type="text" x-model="searchTerm" placeholder="Search FAQs..." class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent shadow-sm">
+                <!-- Optional: Category Filters -->
+                 <!--
+                <div class="mt-4 flex flex-wrap justify-center space-x-2">
+                    <button @click="activeCategory = 'All'" :class="{ 'bg-primary text-white': activeCategory === 'All', 'bg-white text-gray-700 hover:bg-gray-200': activeCategory !== 'All' }" class="px-4 py-1 rounded-full text-sm font-medium transition duration-200">All</button>
+                    <button @click="activeCategory = 'Admission'" :class="{ 'bg-primary text-white': activeCategory === 'Admission', 'bg-white text-gray-700 hover:bg-gray-200': activeCategory !== 'Admission' }" class="px-4 py-1 rounded-full text-sm font-medium transition duration-200">Admission</button>
+                    <button @click="activeCategory = 'Academic'" :class="{ 'bg-primary text-white': activeCategory === 'Academic', 'bg-white text-gray-700 hover:bg-gray-200': activeCategory !== 'Academic' }" class="px-4 py-1 rounded-full text-sm font-medium transition duration-200">Academic</button>
+                    <button @click="activeCategory = 'General'" :class="{ 'bg-primary text-white': activeCategory === 'General', 'bg-white text-gray-700 hover:bg-gray-200': activeCategory !== 'General' }" class="px-4 py-1 rounded-full text-sm font-medium transition duration-200">General</button>
+                </div>
+                 -->
+            </div>
+
+            <!-- Accordion -->
+            <div class="max-w-3xl mx-auto space-y-4" x-data="{ openAccordion: null }">
+                <template x-if="filteredFaqs.length === 0">
+                    <p class="text-center text-gray-500 py-8">No FAQs match your search.</p>
+                </template>
+
+                <template x-for="(faq, index) in filteredFaqs" :key="index">
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
+                        <button @click="openAccordion = (openAccordion === index ? null : index)" class="w-full flex justify-between items-center text-left px-6 py-4 focus:outline-none">
+                            <span class="text-lg font-medium text-primary" x-text="faq.question"></span>
+                            <i class="bi transition-transform duration-300" :class="{ 'bi-chevron-down': openAccordion !== index, 'bi-chevron-up': openAccordion === index }"></i>
+                        </button>
+                        <div x-show="openAccordion === index" x-collapse x-cloak>
+                            <div class="px-6 pb-4 pt-2 text-gray-700 leading-relaxed" x-html="faq.answer">
+                                <!-- Use x-html if answers might contain simple HTML like links -->
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Contact Support Section -->
+            <div class="mt-16 text-center bg-white p-8 rounded-lg shadow-md max-w-3xl mx-auto">
+                 <h3 class="text-2xl font-bold text-primary mb-4">Can't find an answer?</h3>
+                 <p class="text-gray-600 mb-6">If you have other questions, feel free to reach out to our support team.</p>
+                 <a href="{% url 'website:contact' %}" class="bg-secondary hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-lg transition duration-300">
+                    Contact Support
+                 </a>
+            </div>
+
+        </div>
+    </section>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+    <!-- Alpine JS Collapse plugin -->
+    <script src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+{% endblock %}

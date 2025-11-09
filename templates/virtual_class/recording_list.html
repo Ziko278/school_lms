@@ -1,0 +1,232 @@
+{% extends 'base/base_staff.html' %}
+{% load static %}
+{% load humanize %}
+{% load widget_tweaks %}
+
+{% block title %}Class Recordings | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Class Recordings</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item active">Recordings</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-12">
+
+            <div class="card">
+                <div class="card-body">
+                     <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title">My Uploaded Recordings</h5>
+                        <a href="{% url 'virtual_class:recording_upload' %}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-cloud-upload me-1"></i> Upload Recording
+                        </a>
+                     </div>
+
+                    {% include 'components/alerts.html' %}
+
+                    <!-- Filter Form -->
+                    <form method="get" class="row g-2 mb-3 align-items-end">
+                        <div class="col-md-5">
+                            <label for="course" class="form-label form-label-sm visually-hidden">Filter by Course</label>
+                            <select id="course" name="course" class="form-select form-select-sm">
+                                <option value="">Filter by Course...</option>
+                                {% for alloc in lecturer_courses %}
+                                <option value="{{ alloc.course.id }}" {% if alloc.course.id|stringformat:"s" == selected_course %}selected{% endif %}>
+                                    {{ alloc.course.code }} - {{ alloc.course.title }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                             <button type="submit" class="btn btn-secondary btn-sm w-100"><i class="bi bi-filter"></i> Filter</button>
+                        </div>
+                         <div class="col-md-2">
+                             <a href="{% url 'virtual_class:recording_list' %}" class="btn btn-outline-secondary btn-sm w-100">Clear</a>
+                         </div>
+                    </form>
+
+                    <!-- Recordings Table -->
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover datatable-custom">
+                            <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Title</th>
+                                    <th scope="col">Course</th>
+                                    <th scope="col">Date Recorded</th>
+                                    <th scope="col">Duration</th>
+                                    <th scope="col">Type</th>
+                                    <th scope="col">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for recording in recordings_page %}
+                                <tr id="recording-row-{{ recording.id }}">
+                                    <th scope="row">{{ forloop.counter0|add:recordings_page.start_index }}</th>
+                                    <td>{{ recording.title|truncatechars:40 }}</td>
+                                    <td>{{ recording.course_allocation.course.code }}</td>
+                                    <td>{{ recording.date_recorded|date:"M d, Y" }}</td>
+                                    <td>{{ recording.duration|default:"N/A" }}</td>
+                                    <td>
+                                        {% if recording.recording_file %}
+                                            <i class="bi bi-file-earmark-play text-primary" title="File Upload"></i> File
+                                        {% elif recording.recording_link %}
+                                            <i class="bi bi-link-45deg text-info" title="External Link"></i> Link
+                                        {% else %}
+                                            <span class="text-muted small">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {# View Button - Link depends on type #}
+                                        {% if recording.recording_file %}
+                                            <a href="{{ recording.recording_file.url }}" target="_blank" class="btn btn-outline-primary btn-sm" title="View/Download File">
+                                                <i class="bi bi-play-circle"></i>
+                                            </a>
+                                        {% elif recording.recording_link %}
+                                             <a href="{{ recording.recording_link }}" target="_blank" class="btn btn-outline-info btn-sm" title="Open Link">
+                                                <i class="bi bi-box-arrow-up-right"></i>
+                                            </a>
+                                        {% endif %}
+
+                                        <a href="{% url 'virtual_class:recording_edit' recording.id %}" class="btn btn-outline-warning btn-sm" title="Edit">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-outline-danger btn-sm delete-recording-btn" data-id="{{ recording.id }}" data-bs-toggle="modal" data-bs-target="#deleteConfirmModal" data-title="{{ recording.title }}" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted">No recordings found matching your criteria.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- End Recordings Table -->
+
+                     {% include 'components/pagination.html' with page_obj=recordings_page %}
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteModalLabel">Confirm Deletion</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+       <form id="deleteForm" method="post" action=""> {# Action set dynamically #}
+            {% csrf_token %}
+            <div class="modal-body">
+                Are you sure you want to delete the recording titled "<strong id="recordingTitleToDelete"></strong>"? This action cannot be undone. The associated file (if any) will also be deleted.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-danger">Yes, Delete Recording</button>
+            </div>
+       </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Simple Datatable Initialization if needed
+    document.addEventListener('DOMContentLoaded', () => {
+        const customTable = document.querySelector('.datatable-custom');
+        if (customTable) {
+            new simpleDatatables.DataTable(customTable, {
+                searchable: false, // Use form filter
+                // paging: false // Handled by Django pagination
+            });
+        }
+
+        // Handle Delete Modal population
+        const deleteModal = document.getElementById('deleteConfirmModal');
+        if (deleteModal) {
+            deleteModal.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget; // Button that triggered the modal
+                const recordingId = button.dataset.id;
+                const recordingTitle = button.dataset.title;
+
+                const modalTitleSpan = deleteModal.querySelector('#recordingTitleToDelete');
+                const form = deleteModal.querySelector('#deleteForm');
+
+                // Construct the action URL (assuming a pattern like /virtual-class/recordings/delete/<pk>/)
+                const actionUrl = `/virtual-class/recordings/delete/${recordingId}/`;
+
+                modalTitleSpan.textContent = recordingTitle;
+                form.action = actionUrl;
+            });
+        }
+
+        // Optional: AJAX Delete (example)
+        /*
+        document.querySelectorAll('.delete-recording-btn-ajax').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault(); // Prevent modal if using direct AJAX
+                const recordingId = this.dataset.id;
+                const recordingTitle = this.dataset.title;
+                const row = document.getElementById(`recording-row-${recordingId}`);
+
+                if (confirm(`Are you sure you want to delete "${recordingTitle}"?`)) {
+                     // Show spinner maybe
+                    fetch("{% url 'virtual_class:delete_recording_ajax' %}", { // Ensure this URL exists and maps to an AJAX view
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `recording_id=${recordingId}`
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            row.remove(); // Remove row from table
+                             showTemporaryAlert(data.message || 'Recording deleted.', 'success');
+                             // Optional: Update pagination info if needed
+                        } else {
+                            showTemporaryAlert(data.message || 'Failed to delete recording.', 'danger');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Delete error:', error);
+                        showTemporaryAlert('An error occurred while deleting.', 'danger');
+                    });
+                }
+            });
+        });
+
+        function showTemporaryAlert(message, type = 'info') { // Add this helper if using AJAX delete
+            const alertContainer = document.querySelector('section .card .card-body');
+            // ... (rest of the alert function from previous examples) ...
+        }
+        */
+    });
+</script>
+<style>
+.datatable-custom th, .datatable-custom td {
+    vertical-align: middle;
+}
+.btn-sm i { /* Adjust icon size in small buttons */
+    font-size: 0.8rem;
+}
+</style>
+{% endblock %}

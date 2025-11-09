@@ -1,0 +1,99 @@
+{% load static %}
+
+{% if footer_type == 'public' %}
+<!-- ========================= Public Website Footer (Tailwind) ========================= -->
+<footer class="bg-gray-800 text-gray-300 py-12 mt-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <!-- School Info -->
+            <div>
+                <h3 class="text-lg font-semibold text-white mb-4">{{ school_info.school_name }}</h3>
+                <p class="text-sm">{{ school_info.school_address|linebreaksbr }}</p>
+                <p class="text-sm mt-2">Phone: {{ school_info.school_phone }}</p>
+                <p class="text-sm">Email: {{ school_info.school_email }}</p>
+            </div>
+            <!-- Quick Links -->
+            <div>
+                <h3 class="text-lg font-semibold text-white mb-4">Quick Links</h3>
+                <ul class="space-y-2 text-sm">
+                    <li><a href="{% url 'website:home' %}" class="hover:text-white">Home</a></li>
+                    <li><a href="{% url 'website:about' %}" class="hover:text-white">About Us</a></li>
+                    <li><a href="{% url 'website:admission_portal' %}" class="hover:text-white">Admission</a></li>
+                    <li><a href="{% url 'accounts:login' %}" class="hover:text-white">Portal Login</a></li>
+                </ul>
+            </div>
+            <!-- Academics -->
+            <div>
+                <h3 class="text-lg font-semibold text-white mb-4">Academics</h3>
+                <ul class="space-y-2 text-sm">
+                    <li><a href="{% url 'website:departments' %}" class="hover:text-white">Departments</a></li>
+                    <li><a href="{% url 'website:programs' %}" class="hover:text-white">Programs</a></li>
+                    <!-- Add more links if needed -->
+                </ul>
+            </div>
+            <!-- Newsletter (Optional) -->
+            <div>
+                <h3 class="text-lg font-semibold text-white mb-4">Newsletter</h3>
+                <p class="text-sm mb-2">Subscribe to get the latest updates.</p>
+                <form action="{% url 'website:subscribe_newsletter_ajax' %}" method="post" id="newsletter-form">
+                    {% csrf_token %}
+                    <div class="flex">
+                        <input type="email" name="email" placeholder="Your Email" class="w-full px-3 py-2 text-gray-800 rounded-l-md focus:outline-none" required>
+                        <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-r-md">Subscribe</button>
+                    </div>
+                     <p id="newsletter-message" class="text-sm mt-2"></p>
+                </form>
+            </div>
+        </div>
+        <div class="mt-8 border-t border-gray-700 pt-8 text-center text-sm">
+            &copy; {% now "Y" %} {{ school_info.school_name }}. All Rights Reserved.
+        </div>
+    </div>
+    {% block extra_scripts %}
+    <script>
+        // Optional: AJAX for newsletter
+        const newsletterForm = document.getElementById('newsletter-form');
+        const newsletterMessage = document.getElementById('newsletter-message');
+        if (newsletterForm) {
+            newsletterForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                newsletterMessage.textContent = 'Subscribing...';
+                newsletterMessage.className = 'text-sm mt-2 text-info';
+
+                fetch(this.action, {
+                    method: 'POST',
+                    body: new FormData(this),
+                    headers: {
+                        'X-CSRFToken': this.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        newsletterMessage.textContent = data.message;
+                        newsletterMessage.className = 'text-sm mt-2 text-success';
+                        this.reset();
+                    } else {
+                        newsletterMessage.textContent = data.message || 'Subscription failed.';
+                        newsletterMessage.className = 'text-sm mt-2 text-danger';
+                    }
+                })
+                .catch(error => {
+                    newsletterMessage.textContent = 'An error occurred.';
+                    newsletterMessage.className = 'text-sm mt-2 text-danger';
+                    console.error('Error:', error);
+                });
+            });
+        }
+    </script>
+    {% endblock %}
+</footer>
+
+{% else %}
+<!-- ========================= Portal Footer (Bootstrap) ========================= -->
+<footer id="footer" class="footer non-printable">
+    <div class="copyright">
+      &copy; Copyright {% now "Y" %} <strong><span>{{ school_info.school_name|default:"College Portal" }}</span></strong>. All Rights Reserved
+    </div>
+</footer>
+{% endif %}

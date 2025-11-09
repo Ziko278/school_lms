@@ -1,0 +1,82 @@
+{% extends 'base/base_admin.html' %} {# Or base.html, depends if you want sidebar shown #}
+{% load static %}
+
+{% block title %}Permission Denied (403) | {% if school_info %}{{ school_info.school_name }}{% else %}College Management{% endif %}{% endblock %}
+
+{% block main %} {# Use main block from base_admin #}
+<main>
+    <div class="container">
+
+      <section class="section error-403 min-vh-100 d-flex flex-column align-items-center justify-content-center py-4">
+        {# NiceAdmin Style Heading #}
+        <h1>403</h1>
+        <h2>Permission Denied</h2>
+        <p class="text-secondary mb-4">You do not have permission to access this page or perform this action.</p>
+        <p class="text-secondary mb-4">Please contact the system administrator if you believe this is an error.</p>
+
+        {# Action Buttons #}
+        <div class="d-flex gap-2">
+            <a class="btn btn-primary rounded-pill py-2 px-4" href="{% url 'accounts:dashboard' %}"><i class="bi bi-speedometer2 me-1"></i>Back to Dashboard</a>
+             <a class="btn btn-outline-secondary rounded-pill py-2 px-4" href="#" onclick="window.history.back(); return false;"><i class="bi bi-arrow-left me-1"></i>Go Back</a>
+        </div>
+
+
+        {# NiceAdmin Style Image - Using a generic 'forbidden' image path #}
+         {% comment %}
+         Note: Replace 'assets/img/forbidden.svg' with an appropriate image path if you have one.
+         If not, you can remove the <img> tag.
+         {% endcomment %}
+        <img src="{% static 'admin_site/img/forbidden.svg' %}" class="img-fluid py-5" alt="Permission Denied" style="max-width: 350px;"
+            onerror="this.style.display='none'; this.onerror=null;">
+
+        {# Optional Footer Credits #}
+        <div class="credits small text-muted mt-4">
+           &copy; Copyright {% now "Y" %} <strong><span>{% if school_info %}{{ school_info.school_name }}{% else %}College Management{% endif %}</span></strong>. All Rights Reserved
+          {# Designed by <a href="https://bootstrapmade.com/">BootstrapMade</a> #}
+        </div>
+      </section>
+
+    </div>
+  </main><!-- End #main -->
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+/* Styles adapted from NiceAdmin error pages */
+.error-403 {
+  padding: 30px;
+}
+.error-403 h1 {
+  font-size: 180px;
+  font-weight: 700;
+  color: #ffc107; /* NiceAdmin warning color */
+  margin-bottom: 0;
+  line-height: 150px;
+}
+.error-403 h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #012970; /* NiceAdmin dark blue */
+  margin-bottom: 20px;
+}
+.error-403 .btn {
+  padding: 10px 35px;
+  font-size: 16px;
+}
+.error-403 img {
+    max-width: 80%;
+    height: auto;
+}
+
+@media (max-width: 768px) {
+    .error-403 h1 {
+        font-size: 120px;
+        line-height: 100px;
+    }
+     .error-403 h2 {
+        font-size: 20px;
+     }
+}
+</style>
+{% endblock %}
+

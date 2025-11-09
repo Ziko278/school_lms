@@ -1,0 +1,222 @@
+{% extends 'base/base_staff.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Mark Attendance | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Mark New Attendance</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'attendance:attendance_list' %}">Attendance</a></li>
+            <li class="breadcrumb-item active">Mark</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Attendance Details & Marking</h5>
+
+                    {% include 'components/alerts.html' %}
+
+                    <!-- Attendance Form -->
+                    <form method="POST" action="" class="needs-validation" id="attendanceForm" novalidate>
+                        {% csrf_token %}
+
+                        <!-- Step 1: Session Details -->
+                        <div class="row g-3 mb-4 border-bottom pb-3">
+                             <div class="col-md-4">
+                                <label for="course_allocation" class="form-label">Course <span class="text-danger">*</span></label>
+                                <select name="course_allocation" id="course_allocation" class="form-select" required>
+                                    <option value="">Select Course...</option>
+                                    {% for alloc in allocations %}
+                                        <option value="{{ alloc.id }}" data-course-id="{{ alloc.course.id }}">
+                                            {{ alloc.course.code }} - {{ alloc.course.title }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="invalid-feedback">Please select the course.</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form.date.id_for_label }}" class="form-label">{{ form.date.label }} <span class="text-danger">*</span></label>
+                                {% render_field form.date class="form-control" type="date" required=True %}
+                                <div class="invalid-feedback">{{ form.date.errors|first|default:"Please select the date." }}</div>
+                            </div>
+                             <div class="col-md-4">
+                                <label for="{{ form.topic_covered.id_for_label }}" class="form-label">{{ form.topic_covered.label }} <span class="text-danger">*</span></label>
+                                {% render_field form.topic_covered class="form-control" required=True placeholder="e.g., Introduction to Algorithms" %}
+                                <div class="invalid-feedback">{{ form.topic_covered.errors|first|default:"Please enter the topic covered." }}</div>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Student List & Marking -->
+                         <div id="studentListContainer" class="mt-4" style="display: none;">
+                             <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 id="studentListTitle">Registered Students</h6>
+                                <button type="button" class="btn btn-outline-success btn-sm" id="markAllPresentBtn">
+                                    <i class="bi bi-check2-all me-1"></i> Mark All Present
+                                </button>
+                             </div>
+                             <div class="table-responsive">
+                                <table class="table table-sm table-hover" id="studentAttendanceTable">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Matric No.</th>
+                                            <th>Name</th>
+                                            <th class="text-center">Present</th>
+                                            <th class="text-center">Absent</th>
+                                            <th class="text-center">Late</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="studentListBody">
+                                        {# Student rows will be loaded here via AJAX #}
+                                         <tr id="loadingRow">
+                                             <td colspan="6" class="text-center text-muted">
+                                                 <div class="spinner-border spinner-border-sm" role="status">
+                                                     <span class="visually-hidden">Loading...</span>
+                                                 </div>
+                                                 Loading students...
+                                             </td>
+                                         </tr>
+                                         <tr id="noStudentsRow" style="display: none;">
+                                             <td colspan="6" class="text-center text-muted fst-italic">
+                                                No students registered for the selected course in the current session/semester.
+                                             </td>
+                                         </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                             <div class="text-center mt-4">
+                                <button type="submit" class="btn btn-primary" id="saveAttendanceBtn" disabled>
+                                    <i class="bi bi-save me-1"></i> Save Attendance
+                                </button>
+                                <a href="{% url 'attendance:attendance_list' %}" class="btn btn-secondary">Cancel</a>
+                            </div>
+                        </div>
+
+
+                    </form><!-- End Attendance Form -->
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+  'use strict';
+  // Standard Bootstrap validation setup for the main form part
+  var form = document.getElementById('attendanceForm');
+  form.addEventListener('submit', function (event) {
+    if (!form.checkValidity()) {
+      event.preventDefault();
+      event.stopPropagation();
+      // Also ensure course is selected if submitting
+       const courseSelect = document.getElementById('course_allocation');
+       if (!courseSelect.value) {
+           courseSelect.classList.add('is-invalid');
+       }
+    }
+     // Optional: Add validation to ensure at least one student is marked if needed
+    form.classList.add('was-validated');
+  }, false);
+
+
+  const courseSelect = document.getElementById('course_allocation');
+  const studentListContainer = document.getElementById('studentListContainer');
+  const studentListBody = document.getElementById('studentListBody');
+  const loadingRow = document.getElementById('loadingRow');
+  const noStudentsRow = document.getElementById('noStudentsRow');
+  const studentListTitle = document.getElementById('studentListTitle');
+  const markAllPresentBtn = document.getElementById('markAllPresentBtn');
+  const saveAttendanceBtn = document.getElementById('saveAttendanceBtn');
+
+  courseSelect.addEventListener('change', function() {
+      const selectedOption = this.options[this.selectedIndex];
+      const courseId = selectedOption.getAttribute('data-course-id');
+      const allocationId = this.value;
+
+      studentListBody.innerHTML = ''; // Clear previous list
+      studentListContainer.style.display = 'none';
+      saveAttendanceBtn.disabled = true;
+      loadingRow.style.display = 'table-row';
+      noStudentsRow.style.display = 'none';
+
+
+      if (allocationId) {
+           studentListContainer.style.display = 'block';
+           // Fetch students for the selected course/allocation
+           // Replace with your actual AJAX endpoint URL
+           const url = `/courses/ajax/get-students-by-allocation/?allocation_id=${allocationId}`; // EXAMPLE URL
+
+           fetch(url) // Assume endpoint returns { students: [{id: 1, matric: '...', name: '...'}, ...] }
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+             })
+             .then(data => {
+                  loadingRow.style.display = 'none';
+                 if (data.students && data.students.length > 0) {
+                     studentListTitle.textContent = `Registered Students (${data.students.length})`;
+                     data.students.forEach((student, index) => {
+                         const row = document.createElement('tr');
+                         row.innerHTML = `
+                             <td>${index + 1}</td>
+                             <td>${student.matric_number}</td>
+                             <td>${student.name}</td>
+                             <td class="text-center">
+                                 <input class="form-check-input status-radio" type="radio" name="student_${student.id}" id="present_${student.id}" value="present" required>
+                             </td>
+                             <td class="text-center">
+                                 <input class="form-check-input status-radio" type="radio" name="student_${student.id}" id="absent_${student.id}" value="absent" required>
+                             </td>
+                             <td class="text-center">
+                                 <input class="form-check-input status-radio" type="radio" name="student_${student.id}" id="late_${student.id}" value="late" required>
+                             </td>
+                         `;
+                         studentListBody.appendChild(row);
+                     });
+                     saveAttendanceBtn.disabled = false; // Enable save button
+                 } else {
+                      studentListTitle.textContent = 'Registered Students (0)';
+                      noStudentsRow.style.display = 'table-row';
+                 }
+             })
+             .catch(error => {
+                 console.error('Error fetching students:', error);
+                 loadingRow.style.display = 'none';
+                 noStudentsRow.style.display = 'table-row'; // Show no students row on error too
+                 noStudentsRow.querySelector('td').textContent = 'Error loading students. Please try again.';
+                 saveAttendanceBtn.disabled = true;
+             });
+
+      } else {
+           studentListContainer.style.display = 'none'; // Hide if no course selected
+      }
+  });
+
+   // Mark All Present functionality
+   markAllPresentBtn.addEventListener('click', function() {
+       const presentRadios = studentListBody.querySelectorAll('input[value="present"]');
+       presentRadios.forEach(radio => {
+           radio.checked = true;
+       });
+   });
+
+})();
+</script>
+{% endblock %}

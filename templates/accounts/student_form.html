@@ -1,0 +1,174 @@
+{% extends 'base/base_admin.html' %}
+{% load static %}
+
+{% block title %}Edit Student | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Edit Student</h1>
+    {% include 'components/breadcrumb.html' %}
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Update Student Academic Details</h5>
+                    <p class="small text-muted">Student: {{ student.user.get_full_name }} ({{ student.matric_number }})</p>
+
+                     {% include 'components/alerts.html' %}
+
+                    <!-- Student Edit Form -->
+                    <form method="POST" action="{% url 'accounts:student_edit' student.id %}" class="row g-3 needs-validation" novalidate>
+                        {% csrf_token %}
+
+                        <div class="col-md-6">
+                            <label for="{{ form.department.id_for_label }}" class="form-label">{{ form.department.label }}</label>
+                            {{ form.department }}
+                             <div class="invalid-feedback">{{ form.department.errors|first }}</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="{{ form.program.id_for_label }}" class="form-label">{{ form.program.label }}</label>
+                            {{ form.program }}
+                            <div class="invalid-feedback">{{ form.program.errors|first }}</div>
+                             <div class="form-text small">Select department first to load programs.</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="{{ form.current_level.id_for_label }}" class="form-label">{{ form.current_level.label }}</label>
+                            {{ form.current_level }}
+                             <div class="invalid-feedback">{{ form.current_level.errors|first }}</div>
+                              <div class="form-text small">Select program first to load levels.</div>
+                        </div>
+
+                         <div class="col-md-6">
+                            <label for="{{ form.admission_status.id_for_label }}" class="form-label">{{ form.admission_status.label }}</label>
+                            {{ form.admission_status }}
+                             <div class="invalid-feedback">{{ form.admission_status.errors|first }}</div>
+                        </div>
+
+                         {% if form.non_field_errors %}
+                            <div class="col-12 text-danger small">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary">Update Student</button>
+                            <a href="{% url 'accounts:student_detail' student.id %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form><!-- End Student Edit Form -->
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const departmentSelect = document.getElementById("{{ form.department.id_for_label }}");
+        const programSelect = document.getElementById("{{ form.program.id_for_label }}");
+        const levelSelect = document.getElementById("{{ form.current_level.id_for_label }}");
+
+        departmentSelect.addEventListener('change', function() {
+            const departmentId = this.value;
+            programSelect.innerHTML = '<option value="">Loading...</option>'; // Clear existing options
+            levelSelect.innerHTML = '<option value="">Select program first</option>'; // Clear level options
+
+            if (!departmentId) {
+                 programSelect.innerHTML = '<option value="">Select department first</option>';
+                 return;
+            }
+
+            fetch(`{% url 'academics:get_programs_ajax' %}?department_id=${departmentId}`)
+                .then(response => response.json())
+                .then(data => {
+                    programSelect.innerHTML = '<option value="">Select Program</option>'; // Reset placeholder
+                    data.programs.forEach(program => {
+                        const option = new Option(program.name, program.id);
+                        // Check if this program was the previously selected one
+                        if (program.id == "{{ student.program.id|default:'' }}") {
+                             option.selected = true;
+                             // Trigger level load if program is pre-selected
+                             loadLevels(program.id);
+                        }
+                        programSelect.appendChild(option);
+                    });
+                     if (programSelect.selectedIndex <= 0 && "{{ student.program.id|default:'' }}") {
+                         // If the current student's program is not in the new list, clear level
+                         levelSelect.innerHTML = '<option value="">Select program first</option>';
+                     }
+
+                })
+                .catch(error => {
+                    console.error('Error fetching programs:', error);
+                    programSelect.innerHTML = '<option value="">Error loading programs</option>';
+                });
+        });
+
+        programSelect.addEventListener('change', function() {
+             const programId = this.value;
+             loadLevels(programId);
+        });
+
+        function loadLevels(programId) {
+             levelSelect.innerHTML = '<option value="">Loading...</option>'; // Clear existing options
+             if (!programId) {
+                 levelSelect.innerHTML = '<option value="">Select program first</option>';
+                 return;
+             }
+
+             fetch(`{% url 'academics:get_levels_ajax' %}?program_id=${programId}`)
+                .then(response => response.json())
+                .then(data => {
+                    levelSelect.innerHTML = '<option value="">Select Level</option>'; // Reset placeholder
+                    data.levels.forEach(level => {
+                        const option = new Option(level.name, level.id);
+                         if (level.id == "{{ student.current_level.id|default:'' }}") {
+                             option.selected = true;
+                        }
+                        levelSelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching levels:', error);
+                    levelSelect.innerHTML = '<option value="">Error loading levels</option>';
+                });
+        }
+
+        // Trigger change on load if department is pre-selected to load programs/levels
+         if (departmentSelect.value) {
+            departmentSelect.dispatchEvent(new Event('change'));
+         } else if (programSelect.value) {
+             // If only program is selected (e.g. initial load), load its levels
+             loadLevels(programSelect.value);
+         }
+
+    });
+
+    // Example Bootstrap validation activation
+    (function () {
+      'use strict'
+      var forms = document.querySelectorAll('.needs-validation')
+      Array.prototype.slice.call(forms)
+        .forEach(function (form) {
+          form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+              event.preventDefault()
+              event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+          }, false)
+        })
+    })();
+</script>
+{% endblock %}

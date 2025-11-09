@@ -1,0 +1,121 @@
+{% extends 'base/base_public.html' %}
+{% load static %}
+
+{% block title %}About Us | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="bg-gray-100">
+
+    <!-- Page Header -->
+    <section class="bg-primary text-white py-16">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h1 class="text-4xl font-bold">About {{ school_info.school_name }}</h1>
+        </div>
+    </section>
+
+    <!-- History Section -->
+    <section class="py-16 bg-white">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                <div>
+                    
+                    <h2 class="text-3xl font-bold text-primary mb-4">Our History</h2>
+                    <p class="text-gray-700 leading-relaxed mb-4">
+                        Established in {{ school_info.established_year|default:"the past" }}, {{ school_info.school_name }} has a rich tradition of academic excellence and community service.
+                        Founded with the vision to provide quality education and foster innovation, we have grown into a leading institution, nurturing generations of successful graduates.
+                    </p>
+                    <p class="text-gray-700 leading-relaxed">
+                        Over the years, we have expanded our programs, upgraded our facilities, and embraced modern teaching methodologies to meet the evolving needs of our students and society. Our commitment to our core values remains unwavering as we look towards the future.
+                    </p>
+                    <!-- Add more historical details if available -->
+                </div>
+                <div class="rounded-lg overflow-hidden shadow-lg">
+                     <img src="https://placehold.co/600x400/366092/ffffff?text=Our+Campus" alt="College Campus" class="w-full h-auto object-cover">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Vision & Mission Section -->
+    <section class="py-16 bg-gradient-to-r from-blue-50 to-indigo-50">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div class="p-8 bg-white rounded-lg shadow-md">
+                    <h3 class="text-2xl font-bold text-secondary mb-3"><i class="bi bi-eye-fill mr-2"></i>Our Vision</h3>
+                    <p class="text-gray-700 leading-relaxed">
+                        To be a center of academic excellence, recognized nationally and internationally for innovative teaching, research, and community engagement, producing graduates equipped to lead and inspire.
+                        <!-- Replace with actual vision if available -->
+                    </p>
+                </div>
+                <div class="p-8 bg-white rounded-lg shadow-md">
+                    <h3 class="text-2xl font-bold text-secondary mb-3"><i class="bi bi-bullseye mr-2"></i>Our Mission</h3>
+                    <p class="text-gray-700 leading-relaxed">
+                        To provide accessible, high-quality education that fosters critical thinking, creativity, and ethical leadership. We are dedicated to empowering students with the knowledge and skills needed to contribute meaningfully to society.
+                         <!-- Replace with actual mission if available -->
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Facilities Section -->
+    <section class="py-16">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-center text-primary mb-12">Our Facilities</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="group relative overflow-hidden rounded-lg shadow-lg">
+                    <img src="https://placehold.co/400x300/e2e8f0/64748b?text=Library" alt="Library" class="w-full h-48 object-cover transform group-hover:scale-105 transition duration-300">
+                    <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
+                        <span class="text-white text-lg font-semibold">Modern Library</span>
+                    </div>
+                </div>
+                <div class="group relative overflow-hidden rounded-lg shadow-lg">
+                    <img src="https://placehold.co/400x300/e2e8f0/64748b?text=Labs" alt="Laboratories" class="w-full h-48 object-cover transform group-hover:scale-105 transition duration-300">
+                    <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
+                        <span class="text-white text-lg font-semibold">Equipped Labs</span>
+                    </div>
+                </div>
+                 <div class="group relative overflow-hidden rounded-lg shadow-lg">
+                    <img src="https://placehold.co/400x300/e2e8f0/64748b?text=Sports+Complex" alt="Sports Complex" class="w-full h-48 object-cover transform group-hover:scale-105 transition duration-300">
+                    <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
+                        <span class="text-white text-lg font-semibold">Sports Complex</span>
+                    </div>
+                </div>
+                 <div class="group relative overflow-hidden rounded-lg shadow-lg">
+                    <img src="https://placehold.co/400x300/e2e8f0/64748b?text=Hostels" alt="Hostels" class="w-full h-48 object-cover transform group-hover:scale-105 transition duration-300">
+                    <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
+                        <span class="text-white text-lg font-semibold">Comfortable Hostels</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Leadership Section (Placeholder) -->
+    <section class="py-16 bg-white">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-center text-primary mb-12">Meet Our Leadership</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Example Card (Repeat for key leaders) -->
+                <div class="text-center bg-gray-50 p-6 rounded-lg shadow-sm">
+                    <img src="https://placehold.co/150x150/607d8b/FFFFFF?text=Leader+1" alt="Leader Name" class="w-32 h-32 rounded-full mx-auto mb-4 object-cover">
+                    <h4 class="text-xl font-semibold mb-1">Dr. Jane Doe</h4>
+                    <p class="text-gray-600">Principal / Provost</p>
+                </div>
+                 <div class="text-center bg-gray-50 p-6 rounded-lg shadow-sm">
+                    <img src="https://placehold.co/150x150/607d8b/FFFFFF?text=Leader+2" alt="Leader Name" class="w-32 h-32 rounded-full mx-auto mb-4 object-cover">
+                    <h4 class="text-xl font-semibold mb-1">Prof. John Smith</h4>
+                    <p class="text-gray-600">Vice Principal / Deputy Provost</p>
+                </div>
+                 <div class="text-center bg-gray-50 p-6 rounded-lg shadow-sm">
+                    <img src="https://placehold.co/150x150/607d8b/FFFFFF?text=Leader+3" alt="Leader Name" class="w-32 h-32 rounded-full mx-auto mb-4 object-cover">
+                    <h4 class="text-xl font-semibold mb-1">Mr. Adekunle Ade</h4>
+                    <p class="text-gray-600">Registrar</p>
+                </div>
+                <!-- Add more leader cards as needed -->
+            </div>
+        </div>
+    </section>
+
+</div>
+{% endblock %}

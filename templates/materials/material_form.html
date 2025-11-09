@@ -1,0 +1,161 @@
+{% extends 'base/base_staff.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Edit Material | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Edit Course Material</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'materials:material_list' %}">Materials</a></li>
+            <li class="breadcrumb-item active">Edit</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Edit Material: "{{ material.title }}"</h5>
+
+                    {% include 'components/alerts.html' %}
+
+                    <!-- Edit Form -->
+                    <form method="POST" action="{% url 'materials:material_edit' material.id %}" enctype="multipart/form-data" class="row g-3 needs-validation" novalidate>
+                        {% csrf_token %}
+
+                        {# Course Allocation - Usually not editable after creation, show as read-only #}
+                        <div class="col-12">
+                             <label class="form-label">Course</label>
+                             <input type="text" class="form-control" value="{{ material.course_allocation.course.code }} - {{ material.course_allocation.course.title }} ({{ material.course_allocation.session.name }})" readonly disabled>
+                             {# Hidden field might be needed if backend relies on it, though unlikely for edit #}
+                             {# <input type="hidden" name="{{ form.course_allocation.name }}" value="{{ material.course_allocation.id }}"> #}
+                        </div>
+
+                        <div class="col-12">
+                             <label for="{{ form.title.id_for_label }}" class="form-label">{{ form.title.label }} <span class="text-danger">*</span></label>
+                             {% render_field form.title class="form-control" required=True placeholder="e.g., Lecture Notes - Week 1" %}
+                             <div class="invalid-feedback">{{ form.title.errors|first|default:"Please provide a title." }}</div>
+                        </div>
+
+                         <div class="col-12">
+                             <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+                             {% render_field form.description class="form-control" rows="3" placeholder="Optional: Briefly describe the material..." %}
+                             <div class="invalid-feedback">{{ form.description.errors|first }}</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="{{ form.material_type.id_for_label }}" class="form-label">{{ form.material_type.label }} <span class="text-danger">*</span></label>
+                            {% render_field form.material_type class="form-select" required=True id="materialTypeSelect" %}
+                            <div class="invalid-feedback">{{ form.material_type.errors|first|default:"Please select the material type." }}</div>
+                        </div>
+
+                        {# Conditional Fields #}
+                        <div class="col-md-6" id="fileUploadGroup" style="display: none;">
+                            <label for="{{ form.file.id_for_label }}" class="form-label">{{ form.file.label }}</label>
+                            {% render_field form.file class="form-control" %}
+                             <div class="invalid-feedback">{{ form.file.errors|first|default:"Please select a file to upload." }}</div>
+                             {% if material.file %}
+                                <div class="form-text small mt-1">Current file: <a href="{{ material.file.url }}" target="_blank">{{ material.file.name|cut:"course_materials/" }}</a>. Uploading a new file will replace the current one.</div>
+                             {% else %}
+                                <div class="form-text small mt-1">No file currently uploaded.</div>
+                             {% endif %}
+                              {# Add 'required' attribute dynamically via JS if needed #}
+                        </div>
+
+                        <div class="col-md-6" id="linkGroup" style="display: none;">
+                            <label for="{{ form.external_link.id_for_label }}" class="form-label">{{ form.external_link.label }} <span class="text-danger">*</span></label>
+                            {% render_field form.external_link class="form-control" type="url" placeholder="https://..." %}
+                            <div class="invalid-feedback">{{ form.external_link.errors|first|default:"Please enter a valid URL." }}</div>
+                             {# Add 'required' attribute dynamically via JS #}
+                        </div>
+
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i> Update Material</button>
+                            <a href="{% url 'materials:material_list' %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form><!-- End Edit Form -->
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+  'use strict';
+  // Standard Bootstrap validation setup
+  var forms = document.querySelectorAll('.needs-validation');
+  Array.prototype.slice.call(forms).forEach(function (form) {
+    form.addEventListener('submit', function (event) {
+      if (!form.checkValidity()) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      form.classList.add('was-validated');
+    }, false);
+  });
+
+  // Show/Hide File vs Link Input based on Material Type
+  const materialTypeSelect = document.getElementById('materialTypeSelect');
+  const fileGroup = document.getElementById('fileUploadGroup');
+  const linkGroup = document.getElementById('linkGroup');
+  const fileInput = fileGroup ? fileGroup.querySelector('input[type="file"]') : null;
+  const linkInput = linkGroup ? linkGroup.querySelector('input[type="url"]') : null;
+
+  function toggleMaterialInputs() {
+     if (!materialTypeSelect || !fileGroup || !linkGroup || !fileInput || !linkInput) return;
+
+    const selectedType = materialTypeSelect.value;
+    const hasCurrentFile = "{{ material.file.url|default:'' }}" !== ""; // Check if file exists
+
+    if (selectedType === 'link') {
+      fileGroup.style.display = 'none';
+      linkGroup.style.display = 'block';
+      fileInput.required = false; // File not required if type is link
+      linkInput.required = true;
+    } else if (selectedType && selectedType !== '') { // Any other type might need a file
+      fileGroup.style.display = 'block';
+      linkGroup.style.display = 'none';
+      // File is only required if *no* file is currently uploaded AND the type requires one
+      fileInput.required = !hasCurrentFile;
+      linkInput.required = false;
+    } else { // No type selected yet
+      fileGroup.style.display = 'none';
+      linkGroup.style.display = 'none';
+      fileInput.required = false;
+      linkInput.required = false;
+    }
+  }
+
+  if (materialTypeSelect) {
+    materialTypeSelect.addEventListener('change', toggleMaterialInputs);
+    // Initial call to set correct state on page load
+    toggleMaterialInputs();
+
+     // Add listener to file input to make it not required if a file is selected during edit
+     if (fileInput) {
+         fileInput.addEventListener('change', function() {
+            // If a file is selected, it's no longer 'required' in the sense of blocking submission
+            // because a file *is* present. Backend handles replacement.
+            if (fileInput.files.length > 0) {
+                 fileInput.required = false;
+            } else {
+                 // Re-evaluate required status based on type and current file presence
+                 toggleMaterialInputs();
+            }
+         });
+     }
+  }
+})();
+</script>
+{% endblock %}

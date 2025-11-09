@@ -1,0 +1,340 @@
+{% extends 'base/base_admin.html' %} {# Assume all users use admin base for profile #}
+{% load static %}
+
+{% block title %}My Profile | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Profile</h1>
+    {% include 'components/breadcrumb.html' %}
+</div><!-- End Page Title -->
+
+<section class="section profile">
+    <div class="row">
+        <div class="col-xl-4">
+
+            <div class="card">
+                <div class="card-body profile-card pt-4 d-flex flex-column align-items-center">
+
+                    <h2>{{ user.get_full_name|default:user.username }}</h2>
+                    <h3>{{ profile.get_user_type_display|default:"User" }}</h3>
+                     {% if user.staff %}
+                        <p class="small text-muted">{{ user.staff.designation }} - {{ user.staff.department.name|default:"N/A" }}</p>
+                    {% elif user.student %}
+                         <p class="small text-muted">{{ user.student.program.name|default:"N/A" }} - {{ user.student.current_level.name|default:"N/A" }}</p>
+                    {% endif %}
+                    {# Social links if needed #}
+                    {# <div class="social-links mt-2"> ... </div> #}
+
+                     <label for="profileImageUpload" class="btn btn-primary btn-sm mt-3" title="Upload new profile image">
+                        <i class="bi bi-upload"></i> Upload Photo
+                     </label>
+                     <input type="file" id="profileImageUpload" accept="image/*" style="display: none;">
+                     <div id="uploadStatus" class="small mt-2"></div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="col-xl-8">
+
+            <div class="card">
+                <div class="card-body pt-3">
+                    <!-- Bordered Tabs -->
+                    <ul class="nav nav-tabs nav-tabs-bordered">
+
+                        <li class="nav-item">
+                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#profile-overview">Overview</button>
+                        </li>
+
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#profile-edit">Edit Profile</button>
+                        </li>
+
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#profile-change-password">Change Password</button>
+                        </li>
+
+                    </ul>
+                    <div class="tab-content pt-2">
+
+                        <div class="tab-pane fade show active profile-overview" id="profile-overview">
+                            <h5 class="card-title">Profile Details</h5>
+
+                            <div class="row">
+                                <div class="col-lg-3 col-md-4 label ">Full Name</div>
+                                <div class="col-lg-9 col-md-8">{{ user.get_full_name|default:"N/A" }}</div>
+                            </div>
+
+                             {% if user.student %}
+                             <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Matric Number</div>
+                                <div class="col-lg-9 col-md-8">{{ user.student.matric_number|default:"N/A" }}</div>
+                            </div>
+                             <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Program</div>
+                                <div class="col-lg-9 col-md-8">{{ user.student.program.name|default:"N/A" }}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Department</div>
+                                <div class="col-lg-9 col-md-8">{{ user.student.department.name|default:"N/A" }}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Level</div>
+                                <div class="col-lg-9 col-md-8">{{ user.student.current_level.name|default:"N/A" }}</div>
+                            </div>
+                             {% elif user.staff %}
+                             <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Staff ID</div>
+                                <div class="col-lg-9 col-md-8">{{ user.staff.staff_id|default:"N/A" }}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Department</div>
+                                <div class="col-lg-9 col-md-8">{{ user.staff.department.name|default:"N/A" }}</div>
+                            </div>
+                             <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Designation</div>
+                                <div class="col-lg-9 col-md-8">{{ user.staff.designation|default:"N/A" }}</div>
+                            </div>
+                             {% endif %}
+
+                            <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Username</div>
+                                <div class="col-lg-9 col-md-8">{{ user.username }}</div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Email</div>
+                                <div class="col-lg-9 col-md-8">{{ user.email|default:"N/A" }}</div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Phone</div>
+                                <div class="col-lg-9 col-md-8">{{ profile.phone_number|default:"N/A" }}</div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Gender</div>
+                                <div class="col-lg-9 col-md-8">{{ profile.get_gender_display|default:"N/A" }}</div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Date of Birth</div>
+                                <div class="col-lg-9 col-md-8">{{ profile.date_of_birth|date:"M d, Y"|default:"N/A" }}</div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Address</div>
+                                <div class="col-lg-9 col-md-8">{{ profile.address|default:"N/A" }}</div>
+                            </div>
+
+                        </div>
+
+                        <div class="tab-pane fade profile-edit pt-3" id="profile-edit">
+
+                            <!-- Profile Edit Form -->
+                            <form method="POST" action="{% url 'accounts:profile' %}" enctype="multipart/form-data">
+                                {% csrf_token %}
+
+                                {# Note: Profile picture is handled separately via AJAX #}
+
+                                <div class="row mb-3">
+                                    <label for="id_first_name" class="col-md-4 col-lg-3 col-form-label">First Name</label>
+                                    <div class="col-md-8 col-lg-9">
+                                        <input name="first_name" type="text" class="form-control" id="id_first_name" value="{{ user.first_name|default:'' }}">
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <label for="id_last_name" class="col-md-4 col-lg-3 col-form-label">Last Name</label>
+                                    <div class="col-md-8 col-lg-9">
+                                        <input name="last_name" type="text" class="form-control" id="id_last_name" value="{{ user.last_name|default:'' }}">
+                                    </div>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <label for="{{ form.phone_number.id_for_label }}" class="col-md-4 col-lg-3 col-form-label">{{ form.phone_number.label }}</label>
+                                    <div class="col-md-8 col-lg-9">
+                                        {{ form.phone_number }}
+                                        <div class="invalid-feedback">{{ form.phone_number.errors|first }}</div>
+                                    </div>
+                                </div>
+
+                                 <div class="row mb-3">
+                                    <label for="{{ form.gender.id_for_label }}" class="col-md-4 col-lg-3 col-form-label">{{ form.gender.label }}</label>
+                                    <div class="col-md-8 col-lg-9">
+                                        {{ form.gender }}
+                                        <div class="invalid-feedback">{{ form.gender.errors|first }}</div>
+                                    </div>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <label for="{{ form.date_of_birth.id_for_label }}" class="col-md-4 col-lg-3 col-form-label">{{ form.date_of_birth.label }}</label>
+                                    <div class="col-md-8 col-lg-9">
+                                        {{ form.date_of_birth }} {# Assuming widget is DateInput type="date" #}
+                                        <div class="invalid-feedback">{{ form.date_of_birth.errors|first }}</div>
+                                    </div>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <label for="{{ form.address.id_for_label }}" class="col-md-4 col-lg-3 col-form-label">{{ form.address.label }}</label>
+                                    <div class="col-md-8 col-lg-9">
+                                         {{ form.address }}
+                                        <div class="invalid-feedback">{{ form.address.errors|first }}</div>
+                                    </div>
+                                </div>
+
+                                {# Add other editable fields for Staff/Student if needed #}
+                                {# Example: Staff Bio #}
+                                {% if user.staff %}
+                                <div class="row mb-3">
+                                    <label for="id_bio" class="col-md-4 col-lg-3 col-form-label">Bio</label>
+                                    <div class="col-md-8 col-lg-9">
+                                         <textarea name="bio" class="form-control" id="id_bio" style="height: 100px">{{ user.staff.bio|default:'' }}</textarea>
+                                    </div>
+                                </div>
+                                {% endif %}
+
+
+                                <div class="text-center">
+                                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                                </div>
+                            </form><!-- End Profile Edit Form -->
+
+                        </div>
+
+
+                        <div class="tab-pane fade pt-3" id="profile-change-password">
+                            <!-- Change Password Form -->
+                             <form method="POST" action="{% url 'accounts:change_password' %}">
+                                {% csrf_token %}
+
+                                <div class="row mb-3">
+                                    <label for="{{ form_pass.old_password.id_for_label }}" class="col-md-4 col-lg-3 col-form-label">Current Password</label>
+                                    <div class="col-md-8 col-lg-9">
+                                        {{ form_pass.old_password }}
+                                         {% if form_pass.old_password.errors %}
+                                            <div class="text-danger small mt-1">{{ form_pass.old_password.errors|first }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <label for="{{ form_pass.new_password1.id_for_label }}" class="col-md-4 col-lg-3 col-form-label">New Password</label>
+                                    <div class="col-md-8 col-lg-9">
+                                        {{ form_pass.new_password1 }}
+                                         {% if form_pass.new_password1.errors %}
+                                            <div class="text-danger small mt-1">{{ form_pass.new_password1.errors|first }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <label for="{{ form_pass.new_password2.id_for_label }}" class="col-md-4 col-lg-3 col-form-label">Re-enter New Password</label>
+                                    <div class="col-md-8 col-lg-9">
+                                        {{ form_pass.new_password2 }}
+                                         {% if form_pass.new_password2.errors %}
+                                            <div class="text-danger small mt-1">{{ form_pass.new_password2.errors|first }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                 {% if form_pass.non_field_errors %}
+                                    <div class="row mb-3">
+                                        <div class="col-md-8 col-lg-9 offset-md-4 offset-lg-3 text-danger small">
+                                            {% for error in form_pass.non_field_errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                {% endif %}
+
+                                <div class="text-center">
+                                    <button type="submit" class="btn btn-primary">Change Password</button>
+                                </div>
+                            </form><!-- End Change Password Form -->
+
+                        </div>
+
+                    </div><!-- End Bordered Tabs -->
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('profileImageUpload');
+    const imagePreview = document.getElementById('profileImagePreview');
+    const uploadStatus = document.getElementById('uploadStatus');
+    const defaultImage = "{% static 'admin_site/images/default_avatar.png' %}"; // Define default image path
+
+    fileInput.addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (!file) {
+            return;
+        }
+
+        if (file.size > 2 * 1024 * 1024) { // 2MB limit
+             uploadStatus.textContent = 'Error: File size exceeds 2MB.';
+             uploadStatus.className = 'small mt-2 text-danger';
+             fileInput.value = ''; // Clear the input
+             return;
+        }
+
+        // Preview image
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            imagePreview.src = e.target.result;
+        }
+        reader.readAsDataURL(file);
+
+        // Prepare form data for AJAX upload
+        const formData = new FormData();
+        formData.append('profile_picture', file);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}'); // Add CSRF token
+
+        uploadStatus.textContent = 'Uploading...';
+        uploadStatus.className = 'small mt-2 text-info';
+
+        // AJAX request
+        fetch("{% url 'accounts:update_profile_picture_ajax' %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}' // Needed for Django CSRF protection
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                uploadStatus.textContent = 'Upload successful!';
+                uploadStatus.className = 'small mt-2 text-success';
+                // Update preview src just in case there's processing server-side
+                imagePreview.src = data.image_url + '?t=' + new Date().getTime(); // Add timestamp to break cache
+            } else {
+                uploadStatus.textContent = 'Upload failed: ' + (data.message || 'Unknown error');
+                uploadStatus.className = 'small mt-2 text-danger';
+                // Revert to original or default image on failure
+                imagePreview.src = defaultImage;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            uploadStatus.textContent = 'Upload failed: Network error.';
+            uploadStatus.className = 'small mt-2 text-danger';
+             // Revert to original or default image on failure
+             imagePreview.src = defaultImage;
+        })
+        .finally(() => {
+            // Clear the file input after upload attempt
+            // fileInput.value = ''; // Keep the file selected until success? Maybe not needed.
+        });
+    });
+});
+</script>
+{% endblock %}

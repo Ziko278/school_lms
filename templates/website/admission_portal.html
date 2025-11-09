@@ -1,0 +1,167 @@
+{% extends 'base/base_public.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Admission Portal | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="bg-gray-100">
+
+    <!-- Page Header -->
+    <section class="bg-gradient-to-r from-secondary to-green-600 text-white py-16">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+
+            <h1 class="text-4xl font-bold">Admission Portal</h1>
+            <p class="mt-2 text-lg">Start your academic journey at {{ school_info.school_name }}</p>
+        </div>
+    </section>
+
+    <!-- Admission Status Section -->
+    <section class="py-12 bg-white">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            {% if allow_registration %}
+                <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-md shadow-sm inline-block" role="alert">
+                    <p class="font-bold"><i class="bi bi-check-circle-fill mr-2"></i> Admissions Open!</p>
+                    <p>Registration for the upcoming session is currently open.</p>
+                </div>
+                 <p class="mt-4 text-gray-700 text-lg">Registration Fee: <span class="font-bold text-primary">₦{{ registration_fee|default:"0.00"|intcomma }}</span></p>
+            {% else %}
+                <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-md shadow-sm inline-block" role="alert">
+                    <p class="font-bold"><i class="bi bi-info-circle-fill mr-2"></i> Admissions Currently Closed</p>
+                    <p>Please check back later or contact the admissions office for more information.</p>
+                </div>
+            {% endif %}
+        </div>
+        </div>
+    </section>
+
+
+    <!-- Application Process Section -->
+    <section class="py-16">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-center text-primary mb-12">How to Apply</h2>
+            <div class="relative">
+                <!-- Connecting Line -->
+                <div class="hidden md:block absolute top-1/2 left-0 right-0 h-1 bg-gray-300 transform -translate-y-1/2 -z-10"></div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-16 text-center relative z-10">
+                    <!-- Step 1 -->
+                    <div class="flex flex-col items-center">
+                         <div class="relative mb-4">
+                              <div class="w-16 h-16 rounded-full bg-primary text-white flex items-center justify-center text-2xl font-bold shadow-lg">1</div>
+                              <!-- Connector for smaller screens -->
+                              <div class="md:hidden absolute top-full left-1/2 w-px h-8 bg-gray-300 transform -translate-x-1/2"></div>
+                         </div>
+                        <h3 class="text-xl font-semibold mb-2">Verify Admission</h3>
+                        <p class="text-gray-600">Enter your JAMB Registration Number and the Admission PIN sent to your email to confirm your admission status.</p>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="flex flex-col items-center">
+                         <div class="relative mb-4">
+                            <div class="w-16 h-16 rounded-full bg-primary text-white flex items-center justify-center text-2xl font-bold shadow-lg">2</div>
+                             <!-- Connector for smaller screens -->
+                            <div class="md:hidden absolute top-full left-1/2 w-px h-8 bg-gray-300 transform -translate-x-1/2"></div>
+                         </div>
+                        <h3 class="text-xl font-semibold mb-2">Pay Registration Fee</h3>
+                        <p class="text-gray-600">Proceed to make a secure online payment for the non-refundable registration fee using Paystack.</p>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="flex flex-col items-center">
+                         <div class="relative mb-4">
+                             <div class="w-16 h-16 rounded-full bg-primary text-white flex items-center justify-center text-2xl font-bold shadow-lg">3</div>
+                         </div>
+                        <h3 class="text-xl font-semibold mb-2">Complete Registration</h3>
+                        <p class="text-gray-600">Fill out the detailed registration form, upload your passport photograph, and submit your information.</p>
+                    </div>
+                </div>
+            </div>
+
+            {% if allow_registration %}
+            <div class="text-center mt-16">
+                <a href="{% url 'admissions:jamb_verification' %}" class="bg-green-600 text-white font-bold py-4 px-8 rounded-lg text-xl transition duration-300 shadow-lg">
+                    Start Application
+                    <i class="bi bi-arrow-right-circle-fill ml-2"></i>
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+
+     <!-- Departments & Programs Overview -->
+    <section class="py-16 bg-white">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-center text-primary mb-12">Explore Our Programs</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                 {% for dept in departments|slice:":6" %} {# Show first 6 departments #}
+                    <div class="bg-gray-50 p-6 rounded-lg shadow-sm hover:shadow-md transition duration-300 flex flex-col">
+                        <h3 class="text-xl font-semibold text-primary mb-3">{{ dept.name }}</h3>
+                        <ul class="list-disc list-inside text-gray-600 space-y-1 mb-4 flex-grow">
+                            {# Loop 1: Display programs for this department #}
+                            {% for prog in programs %}
+                                {% if prog.department == dept %}
+                                    <li>{{ prog.name }} ({{ prog.duration_years }} yrs)</li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {# Loop 2 (Invisible): Check if any programs were found using cycle #}
+                            {% for prog in programs %}
+                                {% if prog.department == dept %}
+                                    {# If we find at least one match, trip the 'program_found_for_dept' cycle #}
+                                    {% cycle '' as program_found_for_dept silent %}
+                                {% endif %}
+                            {% endfor %}
+
+                            {# Display "No programs" message ONLY if the cycle was never tripped #}
+                            {% if not program_found_for_dept %}
+                                <li>No programs listed yet.</li>
+                            {% endif %}
+                        </ul>
+                        <a href="{% url 'website:programs' %}?department={{ dept.id }}" class="text-secondary hover:underline font-medium mt-auto self-start">View All {{ dept.code }} Programs &raquo;</a>
+                    </div>
+                 {% empty %}
+                    <p class="text-center text-gray-500 md:col-span-2 lg:col-span-3">No departments found.</p>
+                 {% endfor %}
+            </div>
+             <div class="text-center mt-12">
+                <a href="{% url 'website:departments' %}" class="text-primary hover:underline font-semibold">View All Departments & Programs &raquo;</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Requirements Section (Placeholder) -->
+    <section class="py-16 bg-gray-50">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-center text-primary mb-12">Admission Requirements</h2>
+            <div class="bg-white p-8 rounded-lg shadow-md max-w-3xl mx-auto text-gray-700 leading-relaxed">
+                 <p class="mb-4">General requirements typically include:</p>
+                 <ul class="list-disc list-inside space-y-2 mb-4">
+                     <li>O'Level results (WAEC/NECO/NABTEB) with required credits.</li>
+                     <li>JAMB result meeting the cut-off mark for the chosen program.</li>
+                     <li>Acceptance of admission offer via JAMB CAPS.</li>
+                     <li>Successful verification via the college admission portal.</li>
+                     <li>Payment of the required registration fee.</li>
+                 </ul>
+                 <p>Specific requirements may vary by program. Please consult the detailed program information or contact the admissions office.</p>
+                 <div class="mt-6 text-center">
+                    <a href="{% url 'website:programs' %}" class="text-secondary hover:underline font-medium">View Program Details &raquo;</a>
+                 </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Snippet -->
+    <section class="py-16">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+             <h2 class="text-3xl font-bold text-primary mb-4">Have Questions?</h2>
+             <p class="text-lg text-gray-600 mb-8">Check our Frequently Asked Questions or contact the admissions office directly.</p>
+             <a href="{% url 'website:faq' %}" class="bg-primary hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg text-lg transition duration-300">
+                View FAQs
+             </a>
+        </div>
+    </section>
+
+</div>
+{% endblock %}
+

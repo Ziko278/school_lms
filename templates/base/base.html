@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+{% load static %}
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+
+    <!-- Page Title -->
+    <title>{% block title %}College Management System{% endblock %}</title>
+
+    <meta content="" name="description">
+    <meta content="" name="keywords">
+
+    <!-- Favicons -->
+    <!-- These will be loaded from the 'school_info' context variable -->
+    <!-- <link href="{% if school_info.school_logo %}{{ school_info.school_logo.url }}{% endif %}" rel="icon"> -->
+    <!-- <link href="{% if school_info.school_logo %}{{ school_info.school_logo.url }}{% endif %}" rel="apple-touch-icon"> -->
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.gstatic.com" rel="preconnect">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Nunito:300,300i,400,400i,600,600i,700,700i|Poppins:300,300i,400,400i,500,500i,600,600i,700,700i|Inter:300,400,500,600,700" rel="stylesheet">
+
+    <!-- Base Stylesheet -->
+    {% block basestyle %}
+    <!-- This block will be overridden by child templates (Bootstrap or Tailwind) -->
+    {% endblock %}
+
+    <!-- Custom Page-Specific Styles -->
+    {% block extra_styles %}
+    {% endblock %}
+</head>
+
+<body>
+
+    <!-- ======= Header ======= -->
+    {% block header %}
+    <!-- Header content from child templates -->
+    {% endblock %}
+    <!-- End Header -->
+
+    <!-- ======= Sidebar ======= -->
+    {% block sidebar %}
+    <!-- Sidebar content from child templates (for admin, staff, student) -->
+    {% endblock %}
+    <!-- End Sidebar -->
+
+    <!-- ======= Main Content ======= -->
+    <main id="main" class="main">
+
+        <!-- Alerts -->
+        {% include 'components/alerts.html' %}
+
+        <!-- Breadcrumbs -->
+        {% block breadcrumb %}
+        {% endblock %}
+
+        <!-- Main Content Block -->
+        {% block main %}
+        <!-- Page content goes here -->
+        {% endblock %}
+    </main>
+    <!-- End #main -->
+
+    <!-- ======= Footer ======= -->
+    {% block footer %}
+    <!-- Footer content from child templates -->
+    {% endblock %}
+    <!-- End Footer -->
+
+    <a href="#" class="back-to-top d-flex align-items-center justify-content-center non-printable"><i class="bi bi-arrow-up-short"></i></a>
+
+    <!-- Base Vendor JS Files -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+
+    {% block base_scripts %}
+    <!-- This block will be overridden by child templates -->
+    {% endblock %}
+
+    <!-- Custom Page-Specific Scripts -->
+    {% block extra_scripts %}
+    {% endblock %}
+
+</body>
+
+</html>

@@ -1,0 +1,276 @@
+{% load static %}
+
+<!-- ======= Sidebar ======= -->
+<aside id="sidebar" class="sidebar non-printable">
+
+    <ul class="sidebar-nav" id="sidebar-nav">
+
+        <!-- Common: Dashboard -->
+        <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name != 'dashboard' and request.resolver_match.url_name != 'admin_dashboard' %}collapsed{% endif %}" href="{% url 'accounts:dashboard' %}">
+                <i class="bi bi-grid"></i>
+                <span>Dashboard</span>
+            </a>
+        </li><!-- End Dashboard Nav -->
+
+        <!-- ========================= Admin Menu ========================= -->
+        {% if menu_type == 'admin' or user.is_superuser %}
+        <li class="nav-heading">Management</li>
+
+        <!-- Academics Management -->
+        <li class="nav-item">
+            <a class="nav-link collapsed" data-bs-target="#academics-nav" data-bs-toggle="collapse" href="#">
+                <i class="bi bi-mortarboard-fill"></i><span>Academics</span><i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+            <ul id="academics-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+                <li><a href="{% url 'academics:session_list' %}"><i class="bi bi-circle"></i><span>Sessions</span></a></li>
+                <li><a href="{% url 'academics:semester_list' %}"><i class="bi bi-circle"></i><span>Semesters</span></a></li>
+                <li><a href="{% url 'academics:department_list' %}"><i class="bi bi-circle"></i><span>Departments</span></a></li>
+                <li><a href="{% url 'academics:program_list' %}"><i class="bi bi-circle"></i><span>Programs</span></a></li>
+                <li><a href="{% url 'academics:level_list' %}"><i class="bi bi-circle"></i><span>Levels</span></a></li>
+            </ul>
+        </li><!-- End Academics Nav -->
+
+        <!-- Course Management -->
+        <li class="nav-item">
+            <a class="nav-link collapsed" data-bs-target="#courses-nav" data-bs-toggle="collapse" href="#">
+                <i class="bi bi-book-half"></i><span>Courses</span><i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+            <ul id="courses-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+                <li><a href="{% url 'courses:course_list' %}"><i class="bi bi-circle"></i><span>Manage Courses</span></a></li>
+                <li><a href="{% url 'courses:allocation_list' %}"><i class="bi bi-circle"></i><span>Course Allocation</span></a></li>
+                <li><a href="{% url 'courses:registration_list' %}"><i class="bi bi-circle"></i><span>Registrations</span></a></li>
+            </ul>
+        </li><!-- End Courses Nav -->
+
+        <!-- User Management -->
+        <li class="nav-item">
+            <a class="nav-link collapsed" data-bs-target="#users-nav" data-bs-toggle="collapse" href="#">
+                <i class="bi bi-people-fill"></i><span>Users</span><i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+            <ul id="users-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+                <li><a href="{% url 'accounts:staff_list' %}"><i class="bi bi-circle"></i><span>Staff</span></a></li>
+                <li><a href="{% url 'accounts:student_list' %}"><i class="bi bi-circle"></i><span>Students</span></a></li>
+                <li><a href="{% url 'accounts:password_request_list' %}"><i class="bi bi-circle"></i><span>Password Requests</span></a></li>
+            </ul>
+        </li><!-- End Users Nav -->
+
+         <!-- Admission Management -->
+        <li class="nav-item">
+            <a class="nav-link collapsed" data-bs-target="#admissions-nav" data-bs-toggle="collapse" href="#">
+                <i class="bi bi-person-check-fill"></i><span>Admissions</span><i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+            <ul id="admissions-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+                <li><a href="{% url 'admissions:admitted_list' %}"><i class="bi bi-circle"></i><span>Admitted Students</span></a></li>
+                <li><a href="{% url 'admissions:upload_admitted' %}"><i class="bi bi-circle"></i><span>Upload List</span></a></li>
+            </ul>
+        </li><!-- End Admissions Nav -->
+
+        <!-- Payment Management -->
+        <li class="nav-item">
+            <a class="nav-link collapsed" data-bs-target="#payments-nav" data-bs-toggle="collapse" href="#">
+                <i class="bi bi-cash-coin"></i><span>Payments</span><i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+            <ul id="payments-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+                <li><a href="{% url 'payments:payment_list' %}"><i class="bi bi-circle"></i><span>View Payments</span></a></li>
+            </ul>
+        </li><!-- End Payments Nav -->
+
+        <!-- Result Management -->
+        <li class="nav-item">
+             <a class="nav-link collapsed" href="{% url 'results:verification_list' %}">
+                 <i class="bi bi-clipboard-check"></i><span>Result Verification</span>
+            </a>
+        </li><!-- End Result Verification Nav -->
+
+        <li class="nav-heading">System</li>
+
+        <!-- Reports -->
+        <li class="nav-item">
+            <a class="nav-link collapsed" href="{% url 'admin_site:reports_dashboard' %}">
+                <i class="bi bi-bar-chart-line-fill"></i><span>Reports</span>
+            </a>
+        </li><!-- End Reports Nav -->
+
+        <!-- Settings -->
+        <li class="nav-item">
+            <a class="nav-link collapsed" data-bs-target="#settings-nav" data-bs-toggle="collapse" href="#">
+                <i class="bi bi-gear-fill"></i><span>Settings</span><i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+            <ul id="settings-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+                <li><a href="{% url 'admin_site:school_info' %}"><i class="bi bi-circle"></i><span>School Info</span></a></li>
+                <li><a href="{% url 'admin_site:system_settings' %}"><i class="bi bi-circle"></i><span>System Settings</span></a></li>
+            </ul>
+        </li><!-- End Settings Nav -->
+
+        {% endif %}
+        <!-- ========================= End Admin Menu ========================= -->
+
+
+        <!-- ========================= Staff Menu ========================= -->
+        {% if request.user.staff %}
+        <li class="nav-heading">Academic Tools</li>
+
+        <!-- Courses -->
+        <li class="nav-item">
+            <a class="nav-link collapsed" href="{% url 'courses:lecturer_allocated_courses' %}">
+                <i class="bi bi-journal-bookmark-fill"></i><span>Allocated Courses</span>
+            </a>
+        </li><!-- End Courses Nav -->
+
+        <!-- Materials -->
+        <li class="nav-item">
+            <a class="nav-link collapsed" data-bs-target="#materials-nav" data-bs-toggle="collapse" href="#">
+                 <i class="bi bi-folder-fill"></i><span>Materials</span><i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+            <ul id="materials-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+                <li><a href="{% url 'materials:material_list' %}"><i class="bi bi-circle"></i><span>Course Materials</span></a></li>
+                <li><a href="{% url 'materials:material_upload' %}"><i class="bi bi-circle"></i><span>Upload Material</span></a></li>
+            </ul>
+        </li><!-- End Materials Nav -->
+
+        <!-- Assignments -->
+        <li class="nav-item">
+            <a class="nav-link collapsed" data-bs-target="#assignments-nav" data-bs-toggle="collapse" href="#">
+                <i class="bi bi-pencil-square"></i><span>Assignments</span><i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+             <ul id="assignments-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+                <li><a href="{% url 'materials:assignment_list' %}"><i class="bi bi-circle"></i><span>View Assignments</span></a></li>
+                <li><a href="{% url 'materials:assignment_create' %}"><i class="bi bi-circle"></i><span>Create Assignment</span></a></li>
+            </ul>
+        </li><!-- End Assignments Nav -->
+
+        <!-- Attendance -->
+        <li class="nav-item">
+            <a class="nav-link collapsed" data-bs-target="#attendance-nav" data-bs-toggle="collapse" href="#">
+                <i class="bi bi-calendar-check"></i><span>Attendance</span><i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+            <ul id="attendance-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+                <li><a href="{% url 'attendance:attendance_list' %}"><i class="bi bi-circle"></i><span>View Sessions</span></a></li>
+                <li><a href="{% url 'attendance:attendance_create' %}"><i class="bi bi-circle"></i><span>Mark Attendance</span></a></li>
+                <li><a href="{% url 'attendance:attendance_report' %}"><i class="bi bi-circle"></i><span>Attendance Report</span></a></li>
+            </ul>
+        </li><!-- End Attendance Nav -->
+
+        <!-- Results -->
+        <li class="nav-item">
+            <a class="nav-link collapsed" href="{% url 'results:result_entry_list' %}">
+                <i class="bi bi-card-checklist"></i><span>Result Entry</span>
+            </a>
+        </li><!-- End Results Nav -->
+
+         <!-- Virtual Class -->
+        <li class="nav-item">
+            <a class="nav-link collapsed" data-bs-target="#virtualclass-nav" data-bs-toggle="collapse" href="#">
+                <i class="bi bi-camera-video-fill"></i><span>Virtual Class</span><i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+             <ul id="virtualclass-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+<!--                <li><a href="{% url 'virtual_class:recording_list' %}"><i class="bi bi-circle"></i><span>Recordings</span></a></li>-->
+<!--               -->
+                <li><a href="{% url 'virtual_class:whiteboard' %}"><i class="bi bi-circle"></i><span>Whiteboard</span></a></li>
+                 <li><a href="{% url 'virtual_class:whiteboard_list' %}"><i class="bi bi-circle"></i><span>Saved Whiteboards</span></a></li>
+            </ul>
+        </li><!-- End Virtual Class Nav -->
+
+        {% endif %}
+        <!-- ========================= End Staff Menu ========================= -->
+
+
+        <!-- ========================= Student Menu ========================= -->
+        {% if request.user.student %}
+        <li class="nav-heading">Student Portal</li>
+
+        <!-- Course Registration -->
+        <li class="nav-item">
+            <a class="nav-link collapsed" data-bs-target="#coursereg-nav" data-bs-toggle="collapse" href="#">
+                 <i class="bi bi-journal-plus"></i><span>Course Registration</span><i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+            <ul id="coursereg-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+                <li><a href="{% url 'courses:student_register' %}"><i class="bi bi-circle"></i><span>Register Courses</span></a></li>
+                <li><a href="{% url 'courses:student_registered_courses' %}"><i class="bi bi-circle"></i><span>My Registered Courses</span></a></li>
+            </ul>
+        </li><!-- End Course Registration Nav -->
+
+        <!-- Materials -->
+        <li class="nav-item">
+            <a class="nav-link collapsed" href="{% url 'materials:student_material_list' %}">
+                <i class="bi bi-folder2-open"></i><span>Course Materials</span>
+            </a>
+        </li><!-- End Materials Nav -->
+
+        <!-- Assignments -->
+        <li class="nav-item">
+             <a class="nav-link collapsed" href="{% url 'materials:student_assignment_list' %}">
+                <i class="bi bi-pencil-fill"></i><span>Assignments</span>
+            </a>
+        </li><!-- End Assignments Nav -->
+
+        <!-- Attendance -->
+        <li class="nav-item">
+            <a class="nav-link collapsed" href="{% url 'attendance:student_attendance' %}">
+                <i class="bi bi-calendar-check-fill"></i><span>My Attendance</span>
+            </a>
+        </li><!-- End Attendance Nav -->
+
+        <!-- Results -->
+        <li class="nav-item">
+            <a class="nav-link collapsed" data-bs-target="#results-nav" data-bs-toggle="collapse" href="#">
+                <i class="bi bi-bar-chart-steps"></i><span>Results</span><i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+            <ul id="results-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+                <li><a href="{% url 'results:student_result' %}"><i class="bi bi-circle"></i><span>View Results</span></a></li>
+
+<!--                <li><a href="{% url 'results:student_transcript' %}"><i class="bi bi-circle"></i><span>Transcript</span></a></li>-->
+<!--            -->
+            </ul>
+        </li><!-- End Results Nav -->
+
+        <!-- Virtual Class -->
+        <li class="nav-item">
+            <a class="nav-link collapsed" data-bs-target="#virtualclass-nav-student" data-bs-toggle="collapse" href="#">
+                 <i class="bi bi-play-btn-fill"></i><span>Virtual Class</span><i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+             <ul id="virtualclass-nav-student" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+                <li><a href="{% url 'virtual_class:student_whiteboard_list' %}"><i class="bi bi-circle"></i><span>Whiteboard</span></a></li>
+                <li><a href="{% url 'virtual_class:student_recording_list' %}"><i class="bi bi-circle"></i><span>Class Recordings</span></a></li>
+                <!-- Maybe link to view saved whiteboards -->
+            </ul>
+        </li><!-- End Virtual Class Nav -->
+
+        <!-- Admission Letter -->
+<!--        <li class="nav-item">-->
+<!--            <a class="nav-link collapsed" href="{% url 'admissions:admission_letter_download' %}" target="_blank">-->
+<!--                <i class="bi bi-file-earmark-pdf-fill"></i><span>Admission Letter</span>-->
+<!--            </a>-->
+<!--        </li>-->
+
+        <!-- Password Request -->
+        <li class="nav-item">
+            <a class="nav-link collapsed" href="{% url 'accounts:request_password_change' %}">
+                <i class="bi bi-shield-lock-fill"></i><span>Request Password</span>
+            </a>
+        </li>
+
+        {% endif %}
+        <!-- ========================= End Student Menu ========================= -->
+
+
+        <!-- Common: Account -->
+        <li class="nav-heading">Account</li>
+        <li class="nav-item">
+            <a class="nav-link collapsed" href="{% url 'accounts:profile' %}">
+                <i class="bi bi-person-circle"></i>
+                <span>My Profile</span>
+            </a>
+        </li><!-- End Profile Page Nav -->
+
+        <li class="nav-item">
+            <a class="nav-link collapsed" href="{% url 'accounts:logout' %}">
+                <i class="bi bi-box-arrow-right"></i>
+                <span>Logout</span>
+            </a>
+        </li><!-- End Logout Page Nav -->
+
+    </ul>
+
+</aside><!-- End Sidebar-->

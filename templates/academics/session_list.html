@@ -1,0 +1,143 @@
+{% extends 'base/base_admin.html' %}
+{% load static %}
+
+{% block title %}Academic Sessions | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Academic Sessions</h1>
+    {% include 'components/breadcrumb.html' %}
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-12">
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">Manage Sessions</h5>
+                         <a href="{% url 'academics:session_create' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i> Add Session</a>
+                    </div>
+
+                    {% include 'components/alerts.html' %}
+
+                    <!-- Search Form -->
+                    <form method="get" class="row g-3 mb-4 align-items-end">
+                        <div class="col-md-9">
+                             <label for="search" class="form-label form-label-sm visually-hidden">Search Sessions</label>
+                            <input type="text" id="search" class="form-control form-control-sm" name="search" placeholder="Search by session name (e.g., 2024/2025)..." value="{{ search_query|default:'' }}">
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-search me-1"></i> Search</button>
+                        </div>
+                    </form>
+
+                    <!-- Sessions Table -->
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover datatable-custom">
+                            <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Session Name</th>
+                                    <th scope="col">Start Date</th>
+                                    <th scope="col">End Date</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for session_obj in sessions_page %}
+                                <tr {% if session_obj.is_active %} class="table-success" {% endif %}>
+                                    <th scope="row">{{ forloop.counter0|add:sessions_page.start_index }}</th>
+                                    <td>{{ session_obj.name }}</td>
+                                    <td>{{ session_obj.start_date|date:"M d, Y" }}</td>
+                                    <td>{{ session_obj.end_date|date:"M d, Y" }}</td>
+                                    <td>
+                                        {% if session_obj.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                             <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'academics:session_edit' session_obj.id %}" class="btn btn-warning btn-sm" title="Edit Session"><i class="bi bi-pencil-square"></i></a>
+                                         <button type="button" class="btn btn-danger btn-sm" title="Delete Session" data-bs-toggle="modal" data-bs-target="#deleteSessionModal{{ session_obj.id }}">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                         {% if not session_obj.is_active %}
+                                            <button type="button" class="btn btn-success btn-sm" title="Activate Session" data-bs-toggle="modal" data-bs-target="#activateSessionModal{{ session_obj.id }}">
+                                                <i class="bi bi-check-circle"></i> Activate
+                                            </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+
+                                 <!-- Delete Confirmation Modal -->
+                                <div class="modal fade" id="deleteSessionModal{{ session_obj.id }}" tabindex="-1">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                            <h5 class="modal-title">Confirm Deletion</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                            Are you sure you want to delete the session <strong>{{ session_obj.name }}</strong>?
+                                            <br><small class="text-danger">This action cannot be undone. Ensure there are no students or registrations linked to this session.</small>
+                                            </div>
+                                            <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            <form action="{% url 'academics:session_delete' session_obj.id %}" method="post" class="d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-danger">Delete Session</button>
+                                            </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div><!-- End Delete Modal -->
+
+                                 <!-- Activate Confirmation Modal -->
+                                 {% if not session_obj.is_active %}
+                                <div class="modal fade" id="activateSessionModal{{ session_obj.id }}" tabindex="-1">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                            <h5 class="modal-title">Confirm Activation</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                            Activate the session <strong>{{ session_obj.name }}</strong>? This will deactivate any other currently active session and set this as the default for registrations, results, etc.
+                                            </div>
+                                            <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            <form action="{% url 'academics:session_activate' session_obj.id %}" method="post" class="d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-success">Activate Session</button>
+                                            </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div><!-- End Activate Modal -->
+                                {% endif %}
+
+
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">No academic sessions found. <a href="{% url 'academics:session_create' %}">Add one now</a>.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- End Sessions Table -->
+
+                     <!-- Pagination -->
+                     {% include 'components/pagination.html' with page_obj=sessions_page %}
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}

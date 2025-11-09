@@ -1,0 +1,107 @@
+{% extends 'base/base_admin.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Departments | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Departments</h1>
+    {% include 'components/breadcrumb.html' %}
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-12">
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">Manage Departments</h5>
+                         <a href="{% url 'academics:department_create' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i> Add Department</a>
+                    </div>
+
+                    {% include 'components/alerts.html' %}
+
+                    <!-- Search Form -->
+                    <form method="get" class="row g-3 mb-4 align-items-end">
+                        <div class="col-md-9">
+                             <label for="search" class="form-label form-label-sm visually-hidden">Search Departments</label>
+                            <input type="text" id="search" class="form-control form-control-sm" name="search" placeholder="Search by name or code..." value="{{ search_query|default:'' }}">
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-search me-1"></i> Search</button>
+                        </div>
+                    </form>
+
+                     <!-- Department Cards/Table -->
+                     {# Using Cards as preferred in the guide #}
+                     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                        {% for department in departments %}
+                        <div class="col">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-body">
+                                    <h5 class="card-title pt-3 pb-0">{{ department.name }} <span class="badge bg-secondary ms-2">{{ department.code }}</span></h5>
+                                     <p class="small text-muted mb-2">
+                                         HOD: {% if department.hod %}{{ department.hod.user.get_full_name }}{% else %}Not Assigned{% endif %}
+                                     </p>
+                                    <div class="d-flex justify-content-between small mb-2">
+                                        <span><i class="bi bi-person-badge"></i> {{ department.staff_count|intcomma }} Staff</span>
+                                        <span><i class="bi bi-people"></i> {{ department.student_count|intcomma }} Students</span>
+                                        <span><i class="bi bi-journal-bookmark"></i> {{ department.programs.count }} Programs</span> {# Assuming programs related name #}
+                                    </div>
+                                    <p class="card-text small">{{ department.description|truncatewords:15 }}</p>
+
+                                </div>
+                                <div class="card-footer bg-light d-flex justify-content-end">
+                                     <a href="{% url 'academics:department_detail' department.id %}" class="btn btn-info btn-sm me-1" title="View Details"><i class="bi bi-eye"></i></a>
+                                     <a href="{% url 'academics:department_edit' department.id %}" class="btn btn-warning btn-sm me-1" title="Edit Department"><i class="bi bi-pencil-square"></i></a>
+                                     <button type="button" class="btn btn-danger btn-sm" title="Delete Department" data-bs-toggle="modal" data-bs-target="#deleteDeptModal{{ department.id }}">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                         <!-- Delete Confirmation Modal -->
+                        <div class="modal fade" id="deleteDeptModal{{ department.id }}" tabindex="-1">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                    <h5 class="modal-title">Confirm Deletion</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                    Are you sure you want to delete the department <strong>{{ department.name }} ({{ department.code }})</strong>?
+                                    <br><small class="text-danger">This action cannot be undone. Ensure there are no students, staff, programs, or courses linked to this department.</small>
+                                    </div>
+                                    <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <form action="{% url 'academics:department_delete' department.id %}" method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger">Delete Department</button>
+                                    </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div><!-- End Delete Modal -->
+
+                        {% empty %}
+                        <div class="col-12">
+                            <div class="alert alert-light text-center" role="alert">
+                                No departments found. <a href="{% url 'academics:department_create' %}">Add one now</a>.
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                     <!-- End Cards -->
+
+                    {# Add Pagination if using table or if list becomes very long #}
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}

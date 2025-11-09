@@ -1,0 +1,75 @@
+{% extends 'base/base_public.html' %}
+{% load static %}
+
+{% block title %}Academic Programs | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="bg-gray-100 min-h-screen">
+
+    <!-- Page Header -->
+    <section class="bg-primary text-white py-16">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+             
+            <h1 class="text-4xl font-bold">Academic Programs</h1>
+            <p class="mt-2 text-lg">Explore the diverse range of programs designed to shape your future.</p>
+        </div>
+    </section>
+
+    <!-- Filter & Programs Grid Section -->
+    <section class="py-16">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+
+            <!-- Department Filter -->
+            <div class="mb-12 max-w-md mx-auto">
+                <form method="get" action="">
+                    <label for="department_filter" class="block text-sm font-medium text-gray-700 mb-2">Filter by Department:</label>
+                    <select id="department_filter" name="department" onchange="this.form.submit()" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent shadow-sm bg-white">
+                        <option value="">All Departments</option>
+                        {% for dept in departments %}
+                            <option value="{{ dept.id }}" {% if dept.id|stringformat:"s" == selected_department %}selected{% endif %}>
+                                {{ dept.name }} ({{ dept.code }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+
+            <!-- Programs Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {% for prog in programs %}
+                <div class="bg-white rounded-lg shadow-lg overflow-hidden transition duration-300 hover:shadow-xl flex flex-col">
+                    <div class="p-6 flex-grow">
+                        <h2 class="text-xl font-bold text-primary mb-2">{{ prog.name }}</h2>
+                        <p class="text-sm text-gray-500 mb-1">
+                           <i class="bi bi-building mr-1"></i> {{ prog.department.name }}
+                        </p>
+                         <p class="text-sm text-gray-500 mb-3">
+                           <i class="bi bi-clock mr-1"></i> {{ prog.duration_years }} Year{{ prog.duration_years|pluralize }} Program
+                        </p>
+                        <p class="text-gray-600 mb-4 text-sm h-20 overflow-hidden">
+                            {{ prog.description|truncatewords:20|default:"Explore the curriculum and career prospects for this program." }}
+                        </p>
+                    </div>
+                     <div class="p-6 bg-gray-50 border-t border-gray-200">
+                         <!-- Placeholder for a future "View Requirements" button/link -->
+                         <a href="#" class="text-secondary hover:underline font-medium text-sm">
+                            Learn More <i class="bi bi-info-circle ml-1"></i>
+                         </a>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-center text-gray-500 md:col-span-2 lg:col-span-3 py-8">
+                    {% if selected_department %}
+                        No programs found for the selected department.
+                    {% else %}
+                        No programs are currently listed.
+                    {% endif %}
+                </p>
+                {% endfor %}
+            </div>
+
+        </div>
+    </section>
+
+</div>
+{% endblock %}

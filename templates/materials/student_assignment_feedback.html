@@ -1,0 +1,123 @@
+{% extends 'base/base_student.html' %}
+{% load static %}
+{% load humanize %}
+{% load mathfilters %}
+{% block title %}Assignment Feedback | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Assignment Feedback</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'materials:student_assignment_list' %}">Assignments</a></li>
+            <li class="breadcrumb-item active">Feedback</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Feedback for: {{ submission.assignment.title }}</h5>
+                    <h6 class="card-subtitle mb-3 text-muted">{{ submission.assignment.course_allocation.course.code }}</h6>
+
+                    {% include 'components/alerts.html' %}
+
+                    <!-- Submission Details -->
+                    <div class="mb-4">
+                        <h6>Your Submission</h6>
+                         <hr class="mt-1">
+                         <dl class="row">
+                            <dt class="col-sm-4">Submitted At</dt>
+                            <dd class="col-sm-8">{{ submission.submitted_at|date:"M d, Y, H:i" }}
+                                {% if submission.is_late %}
+                                    <span class="badge bg-danger ms-1">LATE</span>
+                                {% else %}
+                                    <span class="badge bg-success ms-1">On Time</span>
+                                {% endif %}
+                            </dd>
+
+                            <dt class="col-sm-4">Submitted File</dt>
+                            <dd class="col-sm-8">
+                                 <a href="{{ submission.file.url }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+                                     <i class="bi bi-download me-1"></i> View Your Submission
+                                 </a>
+                            </dd>
+
+                            {% if submission.submission_text %}
+                            <dt class="col-sm-4">Text Submitted</dt>
+                            <dd class="col-sm-8">
+                                <div class="submission-text-box border p-2 rounded bg-light">
+                                    {{ submission.submission_text|linebreaksbr }}
+                                </div>
+                            </dd>
+                            {% endif %}
+                         </dl>
+                    </div>
+
+                     <!-- Grading & Feedback -->
+                    <div>
+                         <h6>Grading & Feedback</h6>
+                         <hr class="mt-1">
+                         {% if submission.score is not None %}
+                             <div class="row align-items-center">
+                                 <div class="col-md-4 text-center">
+                                     <h2 class="display-5 text-primary fw-bold">{{ submission.score|floatformat:1 }}</h2>
+                                     <p class="text-muted mb-0">out of {{ submission.assignment.total_marks|floatformat:0 }}</p>
+                                     {# Optional: Progress Bar #}
+                                     {% with percentage=submission.score|div:submission.assignment.total_marks|mul:100 %}
+                                        <div class="progress mt-2" style="height: 10px;">
+                                          <div class="progress-bar {% if percentage >= 70 %}bg-success{% elif percentage >= 40 %}bg-warning{% else %}bg-danger{% endif %}"
+                                               role="progressbar" style="width: {{ percentage|floatformat:0 }}%;"
+                                               aria-valuenow="{{ percentage|floatformat:0 }}" aria-valuemin="0" aria-valuemax="100">
+                                           </div>
+                                        </div>
+                                        <small class="text-muted">{{ percentage|floatformat:1 }}%</small>
+                                     {% endwith %}
+                                 </div>
+                                 <div class="col-md-8">
+                                     <h6 class="mt-3 mt-md-0">Feedback from Lecturer:</h6>
+                                     {% if submission.feedback %}
+                                        <div class="feedback-box border p-3 rounded bg-light">
+                                            {{ submission.feedback|linebreaksbr }}
+                                        </div>
+                                     {% else %}
+                                        <p class="text-muted fst-italic">No specific feedback provided.</p>
+                                     {% endif %}
+                                     <p class="small text-muted mt-2">Graded on: {{ submission.graded_at|date:"M d, Y, H:i"|default:"N/A" }}</p>
+                                 </div>
+                             </div>
+                         {% else %}
+                            <div class="alert alert-info text-center" role="alert">
+                              <i class="bi bi-hourglass-split me-1"></i> Your submission has not been graded yet.
+                            </div>
+                         {% endif %}
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <a href="{% url 'materials:student_assignment_list' %}" class="btn btn-secondary"><i class="bi bi-arrow-left me-1"></i> Back to Assignments</a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<style>
+.submission-text-box, .feedback-box {
+    max-height: 250px;
+    overflow-y: auto;
+    font-size: 0.9em;
+    white-space: pre-wrap; /* Preserve whitespace and wrap lines */
+}
+/* Ensure library functions are available */
+
+</style>
+{% endblock %}

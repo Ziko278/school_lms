@@ -1,0 +1,132 @@
+{% extends 'base/base_public.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Payment | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<main>
+    <div class="container">
+
+      <section class="section register min-vh-100 d-flex flex-column align-items-center justify-content-center py-4">
+        <div class="container">
+          <div class="row justify-content-center">
+            <div class="col-lg-6 col-md-8 d-flex flex-column align-items-center justify-content-center">
+
+              <div class="d-flex justify-content-center py-4">
+                <a href="{% url 'website:home' %}" class="logo d-flex align-items-center w-auto">
+                   {% if school_info.school_logo %}
+                    <img src="{{ school_info.school_logo.url }}" alt="{{ school_info.school_name }} Logo" style="max-height: 40px;">
+                   {% endif %}
+                  <span class="d-none d-lg-block ms-2">{{ school_info.school_name }}</span>
+                </a>
+              </div><!-- End Logo -->
+
+              <div class="card mb-3">
+
+                <div class="card-body">
+
+                  <div class="pt-4 pb-2">
+                    <h5 class="card-title text-center pb-0 fs-4">Registration Fee Payment</h5>
+                    <p class="text-center small">Review your details and proceed to payment to complete your admission.</p>
+                  </div>
+
+                   {% include 'components/alerts.html' %}
+
+                   <!-- Student and Payment Details -->
+                   <div class="mb-4 0 p-5 border rounded bg-light small">
+                       <h6 class="mb-3">Payment Summary</h6>
+                       <div class="row mb-1">
+                           <div class="col-5"><strong>Name:</strong></div>
+                           <div class="col-7">{{ admitted_student.first_name }} {{ admitted_student.last_name }}</div>
+                       </div>
+                       <div class="row mb-1">
+                           <div class="col-5"><strong>JAMB No:</strong></div>
+                           <div class="col-7">{{ admitted_student.jamb_registration_number }}</div>
+                       </div>
+                        <div class="row mb-1">
+                           <div class="col-5"><strong>Program:</strong></div>
+                           <div class="col-7">{{ admitted_student.program.name }}</div>
+                       </div>
+                       <hr>
+                       <div class="row mb-1 fw-bold">
+                           <div class="col-5">Payment For:</div>
+                           <div class="col-7">Registration Fee</div>
+                       </div>
+                       <div class="row mb-1 fw-bold">
+                           <div class="col-5">Amount:</div>
+                           <div class="col-7 fs-5 text-primary">₦{{ registration_fee|intcomma }}</div>
+                       </div>
+                        <div class="row mb-0">
+                           <div class="col-5">Method:</div>
+                           <div class="col-7">Paystack (Online)
+                           </div>
+                       </div>
+                   </div>
+
+                  <form method="POST" action="{% url 'admissions:payment_initiation' %}" class="row p-5 g-3 needs-validation" id="paymentForm">
+                    {% csrf_token %}
+
+                    <div class="col-12">
+                      <div class="form-check">
+                        <input class="form-check-input" name="terms" type="checkbox" value="" id="acceptTerms" required>
+                        <label class="form-check-label small" for="acceptTerms">I agree to the <a href="#">terms and conditions</a></label>
+                        <div class="invalid-feedback">You must agree before submitting.</div>
+                      </div>
+                    </div>
+
+                    <div class="col-12 mt-4">
+                      <button class="btn btn-success w-100" type="submit" id="paymentButton">
+                           <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true" id="paymentSpinner"></span>
+                           <i class="bi bi-credit-card me-1"></i> Proceed to Payment
+                      </button>
+                    </div>
+                     <div class="col-12 text-center small mt-3">
+                         <p><a href="{% url 'admissions:jamb_verification' %}"><i class="bi bi-arrow-left me-1"></i> Go Back</a></p>
+                    </div>
+                  </form>
+
+                </div>
+              </div>
+
+              <div class="credits">
+                Payment powered by Paystack
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+  </main><!-- End #main -->
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+  'use strict'
+  var forms = document.querySelectorAll('.needs-validation')
+  Array.prototype.slice.call(forms)
+    .forEach(function (form) {
+      form.addEventListener('submit', function (event) {
+        if (!form.checkValidity()) {
+          event.preventDefault()
+          event.stopPropagation()
+        } else {
+             // Show spinner on valid submission (before redirecting to payment gateway)
+            const button = document.getElementById('paymentButton');
+            const spinner = document.getElementById('paymentSpinner');
+            if (button && spinner) {
+                 button.disabled = true;
+                 spinner.classList.remove('d-none');
+                 button.querySelector('i').classList.add('d-none'); // Hide icon
+            }
+        }
+        form.classList.add('was-validated')
+      }, false)
+    })
+})();
+</script>
+{% endblock %}

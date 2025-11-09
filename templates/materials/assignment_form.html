@@ -1,0 +1,185 @@
+{% extends 'base/base_staff.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}{% if assignment %}Edit{% else %}Create{% endif %} Assignment | {{ school_info.school_name }}{% endblock %}
+
+{% block extra_styles %}
+{# Quill Editor CSS #}
+<link href="{% static 'admin_site/vendor/quill/quill.snow.css' %}" rel="stylesheet">
+<link href="{% static 'admin_site/vendor/quill/quill.bubble.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>{% if assignment %}Edit{% else %}Create New{% endif %} Assignment</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'materials:assignment_list' %}">Assignments</a></li>
+            <li class="breadcrumb-item active">{% if assignment %}Edit{% else %}Create{% endif %}</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Assignment Details</h5>
+
+                    {% include 'components/alerts.html' %}
+
+                    <!-- Assignment Form -->
+                    <form method="POST" action="" enctype="multipart/form-data" class="row g-3 needs-validation" novalidate>
+                        {% csrf_token %}
+
+                         <div class="col-md-6">
+                            <label for="{{ form.course_allocation.id_for_label }}" class="form-label">{{ form.course_allocation.label }} <span class="text-danger">*</span></label>
+                             <select name="course_allocation" id="{{ form.course_allocation.id_for_label }}" class="form-select" required {% if assignment %}disabled{% endif %}>
+                                 <option value="">Select Course...</option>
+                                 {% for alloc in allocations %}
+                                     <option value="{{ alloc.id }}" {% if form.instance.course_allocation_id == alloc.id %}selected{% endif %}>
+                                         {{ alloc.course.code }} - {{ alloc.course.title }} ({{ alloc.session.name }})
+                                     </option>
+                                 {% endfor %}
+                             </select>
+                             {% if assignment %}
+                                <input type="hidden" name="{{ form.course_allocation.name }}" value="{{ form.instance.course_allocation_id }}">
+                                <div class="form-text small">Course cannot be changed after creation.</div>
+                             {% endif %}
+                            <div class="invalid-feedback">{{ form.course_allocation.errors|first|default:"Please select the course." }}</div>
+                        </div>
+
+                        <div class="col-md-6">
+                             <label for="{{ form.title.id_for_label }}" class="form-label">{{ form.title.label }} <span class="text-danger">*</span></label>
+                             {% render_field form.title class="form-control" required=True placeholder="e.g., Midterm Essay" %}
+                             <div class="invalid-feedback">{{ form.title.errors|first|default:"Please provide a title." }}</div>
+                        </div>
+
+                         <div class="col-12" style="height:300px">
+                             <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }} <span class="text-danger">*</span></label>
+                             {# Hidden textarea for Quill #}
+                             <input type="hidden" name="{{ form.description.name }}" id="quillHiddenDescription">
+                             <div id="quillEditor" style="height: 220px;">{{ form.description.value|default:""|safe }}</div>
+                             <div class="invalid-feedback">{{ form.description.errors|first|default:"Please provide a description." }}</div>
+                             <small class="form-text text-muted">Use the editor above to format instructions.</small>
+                        </div>
+
+                        <div class="col-md-6 mt-3" >
+                            <label for="{{ form.file.id_for_label }}" class="form-label">{{ form.file.label }}</label>
+                            {% render_field form.file class="form-control" %}
+                            <div class="invalid-feedback">{{ form.file.errors|first }}</div>
+                             {% if assignment.file %}
+                                <div class="form-text small mt-1">Current file: <a href="{{ assignment.file.url }}" target="_blank">{{ assignment.file.name|cut:"assignments/" }}</a>. Uploading a new file will replace it.</div>
+                             {% endif %}
+                             <small class="form-text text-muted">Optional: Attach a file (e.g., PDF instructions, template).</small>
+                        </div>
+
+                         <div class="col-md-3">
+                            <label for="{{ form.due_date.id_for_label }}" class="form-label">{{ form.due_date.label }} <span class="text-danger">*</span></label>
+                            {% comment %} Use datetime-local input {% endcomment %}
+                            <input type="datetime-local" name="{{ form.due_date.name }}"
+                                   value="{{ form.due_date.value|date:'Y-m-d\TH:i' }}"
+                                   id="{{ form.due_date.id_for_label }}"
+                                   class="form-control" required>
+                             <div class="invalid-feedback">{{ form.due_date.errors|first|default:"Please set a due date and time." }}</div>
+                        </div>
+
+                         <div class="col-md-3">
+                             <label for="{{ form.total_marks.id_for_label }}" class="form-label">{{ form.total_marks.label }} <span class="text-danger">*</span></label>
+                             {% render_field form.total_marks class="form-control" required=True type="number" step="0.01" min="0" placeholder="e.g., 100" %}
+                             <div class="invalid-feedback">{{ form.total_marks.errors|first|default:"Please set the total marks." }}</div>
+                        </div>
+
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save me-1"></i> {% if assignment %}Update{% else %}Create{% endif %} Assignment
+                            </button>
+                            <a href="{% url 'materials:assignment_list' %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form><!-- End Assignment Form -->
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_scripts %}
+{# Quill Editor JS #}
+<script src="{% static 'admin_site/vendor/quill/quill.min.js' %}"></script>
+<script>
+(function () {
+  'use strict';
+  // Standard Bootstrap validation setup
+  var forms = document.querySelectorAll('.needs-validation');
+  const quillHiddenInput = document.getElementById('quillHiddenDescription');
+  var quillEditor = null; // Declare quillEditor in a higher scope
+
+  Array.prototype.slice.call(forms).forEach(function (form) {
+    form.addEventListener('submit', function (event) {
+      // Update hidden input with Quill content before validation/submission
+      if (quillEditor && quillHiddenInput) {
+        quillHiddenInput.value = quillEditor.root.innerHTML;
+        // Basic check if content is empty (excluding empty paragraph tags)
+        if (quillEditor.getText().trim().length === 0) {
+           quillEditor.container.classList.add('is-invalid'); // Add invalid style to editor
+        } else {
+           quillEditor.container.classList.remove('is-invalid');
+        }
+      }
+
+      if (!form.checkValidity() || (quillEditor && quillEditor.getText().trim().length === 0)) {
+        event.preventDefault();
+        event.stopPropagation();
+        // Ensure Quill invalid style is shown if it's the issue
+        if (quillEditor && quillEditor.getText().trim().length === 0) {
+            quillEditor.container.classList.add('is-invalid');
+        }
+      }
+      form.classList.add('was-validated');
+    }, false);
+  });
+
+  // Initialize Quill Editor
+  if (document.getElementById('quillEditor')) {
+    quillEditor = new Quill('#quillEditor', {
+      theme: 'snow',
+       modules: {
+          toolbar: [
+            [{ 'header': [1, 2, 3, false] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{'list': 'ordered'}, {'list': 'bullet'}],
+            ['link', 'blockquote'], // Removed image and video for simplicity
+            [{ 'align': [] }],
+            ['clean']
+          ]
+        }
+    });
+
+     // Add invalid feedback div after Quill editor for Bootstrap styling
+     const quillContainer = document.querySelector('.ql-container');
+     if (quillContainer && !quillContainer.nextElementSibling?.classList.contains('invalid-feedback')) {
+         const feedbackDiv = document.createElement('div');
+         feedbackDiv.className = 'invalid-feedback';
+         feedbackDiv.textContent = 'Please provide a description.'; // Match form.description message
+         quillContainer.parentNode.insertBefore(feedbackDiv, quillContainer.nextSibling);
+     }
+  }
+
+})();
+</script>
+<style>
+/* Style Quill editor when invalid */
+.ql-container.is-invalid {
+    border-color: var(--bs-form-invalid-border-color);
+}
+.ql-container.is-invalid + .invalid-feedback {
+    display: block;
+}
+</style>
+{% endblock %}

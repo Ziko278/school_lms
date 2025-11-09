@@ -1,0 +1,99 @@
+{% extends 'base/base_admin.html' %}
+{% load static %}
+
+{% block title %}{% if department %}Edit Department{% else %}Create Department{% endif %} | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>{% if department %}Edit Department{% else %}Create Department{% endif %}</h1>
+    {% include 'components/breadcrumb.html' %}
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Department Details</h5>
+
+                    {% include 'components/alerts.html' %}
+
+                    <!-- Department Form -->
+                    <form method="POST" action="" class="row g-3 needs-validation" novalidate>
+                        {% csrf_token %}
+
+                        <div class="col-md-8">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
+                            {{ form.name }}
+                            <div class="invalid-feedback">{{ form.name.errors|first }}</div>
+                        </div>
+
+                         <div class="col-md-4">
+                            <label for="{{ form.code.id_for_label }}" class="form-label">{{ form.code.label }}</label>
+                            {{ form.code }}
+                            <div class="invalid-feedback">{{ form.code.errors|first }}</div>
+                            <div class="form-text small">{{ form.code.help_text }}</div>
+                        </div>
+
+                         <div class="col-12">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }} (Optional)</label>
+                            {{ form.description }}
+                            <div class="invalid-feedback">{{ form.description.errors|first }}</div>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="{{ form.hod.id_for_label }}" class="form-label">{{ form.hod.label }} (Optional)</label>
+                            {{ form.hod }}
+                             <div class="invalid-feedback">{{ form.hod.errors|first }}</div>
+                             <div class="form-text small">Select the Head of Department from available staff.</div>
+                             {# Consider using a select2 or searchable dropdown if many staff #}
+                        </div>
+
+
+                         {% if form.non_field_errors %}
+                            <div class="col-12 text-danger small">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary">{% if department %}Update{% else %}Create{% endif %} Department</button>
+                            <a href="{% url 'academics:department_list' %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form><!-- End Department Form -->
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Example starter JavaScript for disabling form submissions if there are invalid fields
+(function () {
+  'use strict'
+
+  // Fetch all the forms we want to apply custom Bootstrap validation styles to
+  var forms = document.querySelectorAll('.needs-validation')
+
+  // Loop over them and prevent submission
+  Array.prototype.slice.call(forms)
+    .forEach(function (form) {
+      form.addEventListener('submit', function (event) {
+        if (!form.checkValidity()) {
+          event.preventDefault()
+          event.stopPropagation()
+        }
+
+        form.classList.add('was-validated')
+      }, false)
+    })
+})()
+</script>
+{% endblock %}

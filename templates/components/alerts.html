@@ -1,0 +1,29 @@
+<!-- Display Django Messages using Bootstrap Alerts -->
+{% if messages %}
+<div class="non-printable" style="position: fixed; top: 70px; right: 20px; z-index: 1050; width: auto; max-width: 400px;">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'success' %}alert-success{% elif message.tags == 'warning' %}alert-warning{% else %}alert-info{% endif %} alert-dismissible fade show shadow-sm" role="alert">
+        {% if message.tags == 'success' %}<i class="bi bi-check-circle me-1"></i>
+        {% elif message.tags == 'error' %}<i class="bi bi-exclamation-octagon me-1"></i>
+        {% elif message.tags == 'warning' %}<i class="bi bi-exclamation-triangle me-1"></i>
+        {% else %}<i class="bi bi-info-circle me-1"></i>
+        {% endif %}
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Add to base_admin.html script section if not already there -->
+<!--
+<script>
+    // Auto-dismiss alerts after 5 seconds
+    window.setTimeout(() => {
+        let alerts = document.querySelectorAll('.alert-dismissible');
+        alerts.forEach(alert => {
+            new bootstrap.Alert(alert).close();
+        });
+    }, 5000);
+</script>
+-->

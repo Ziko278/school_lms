@@ -1,0 +1,152 @@
+{% extends 'base/base_admin.html' %}
+{% load static %}
+
+{% block title %}School Information | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>School Information</h1>
+    {% include 'components/breadcrumb.html' %}
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Update School Details</h5>
+
+                    {% include 'components/alerts.html' %}
+
+                    <!-- School Info Form -->
+                    <form method="POST" action="{% url 'admin_site:school_info' %}" enctype="multipart/form-data" class="row g-3 needs-validation" novalidate>
+                        {% csrf_token %}
+
+                        {# Basic Information Section #}
+                        <fieldset class="border p-3 mb-4 rounded">
+                            <legend class="float-none w-auto px-2 h6">Basic Information</legend>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="{{ form.school_name.id_for_label }}" class="form-label">{{ form.school_name.label }}</label>
+                                    {{ form.school_name }}
+                                    <div class="invalid-feedback">{{ form.school_name.errors|first }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ form.school_phone.id_for_label }}" class="form-label">{{ form.school_phone.label }}</label>
+                                    {{ form.school_phone }}
+                                    <div class="invalid-feedback">{{ form.school_phone.errors|first }}</div>
+                                </div>
+                                <div class="col-md-12">
+                                     <label for="{{ form.school_address.id_for_label }}" class="form-label">{{ form.school_address.label }}</label>
+                                     {{ form.school_address }}
+                                    <div class="invalid-feedback">{{ form.school_address.errors|first }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                     <label for="{{ form.school_email.id_for_label }}" class="form-label">{{ form.school_email.label }}</label>
+                                     {{ form.school_email }}
+                                     <div class="invalid-feedback">{{ form.school_email.errors|first }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                     <label for="{{ form.school_website.id_for_label }}" class="form-label">{{ form.school_website.label }}</label>
+                                     {{ form.school_website }}
+                                     <div class="invalid-feedback">{{ form.school_website.errors|first }}</div>
+                                </div>
+                            </div>
+                         </fieldset>
+
+                         {# Branding Section #}
+                         <fieldset class="border p-3 mb-4 rounded">
+                             <legend class="float-none w-auto px-2 h6">Branding</legend>
+                             <div class="row g-3 align-items-center">
+                                 {% if school_info.school_logo %}
+                                <div class="col-md-3 text-center">
+                                    <img id="logoPreview" src="{{ school_info.school_logo.url|default:'/static/admin_site/images/placeholder_logo.png' }}" alt="Current Logo" class="img-thumbnail mb-2" style="max-height: 100px; max-width: 100%;">
+                                    <small class="text-muted d-block">Current Logo</small>
+                                </div>
+                                 {% endif %}
+                                <div class="col-md-9">
+                                     <label for="{{ form.school_logo.id_for_label }}" class="form-label">{{ form.school_logo.label }}</label>
+                                     {{ form.school_logo }}
+                                     <div class="invalid-feedback">{{ form.school_logo.errors|first }}</div>
+                                     <div class="form-text small">Upload a new logo to replace the current one (e.g., PNG, JPG). Max size: 1MB. Recommended dimensions: 200x200 pixels.</div>
+                                </div>
+                             </div>
+                         </fieldset>
+
+                         {# Additional Info Section #}
+                         <fieldset class="border p-3 mb-4 rounded">
+                            <legend class="float-none w-auto px-2 h6">Additional Information</legend>
+                            <div class="row g-3">
+                                <div class="col-md-8">
+                                    <label for="{{ form.motto.id_for_label }}" class="form-label">{{ form.motto.label }}</label>
+                                    {{ form.motto }}
+                                    <div class="invalid-feedback">{{ form.motto.errors|first }}</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="{{ form.established_year.id_for_label }}" class="form-label">{{ form.established_year.label }}</label>
+                                    {{ form.established_year }}
+                                     <div class="invalid-feedback">{{ form.established_year.errors|first }}</div>
+                                </div>
+                            </div>
+                         </fieldset>
+
+                         {% if form.non_field_errors %}
+                            <div class="col-12 text-danger small">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="text-center mt-3">
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i> Save Changes</button>
+                        </div>
+                    </form><!-- End School Info Form -->
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Logo Preview Script
+    const logoInput = document.getElementById("{{ form.school_logo.id_for_label }}");
+    const logoPreview = document.getElementById("logoPreview");
+    const defaultLogoSrc = "{% static 'admin_site/images/placeholder_logo.png' %}"; // Placeholder image
+
+    logoInput?.addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                logoPreview.src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        } else {
+            // Revert to original or placeholder if no file selected
+             logoPreview.src = defaultLogoSrc;
+        }
+    });
+
+    // Example Bootstrap validation activation
+    (function () {
+      'use strict'
+      var forms = document.querySelectorAll('.needs-validation')
+      Array.prototype.slice.call(forms)
+        .forEach(function (form) {
+          form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+              event.preventDefault()
+              event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+          }, false)
+        })
+    })();
+</script>
+{% endblock %}

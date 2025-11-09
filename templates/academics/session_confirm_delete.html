@@ -1,0 +1,162 @@
+{% extends 'base/base_admin.html' %}
+{% load static %}
+
+{% block title %}{% if session %}Edit Session{% else %}Create Session{% endif %} | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>{% if session %}Edit Session{% else %}Create Session{% endif %}</h1>
+    {% include 'components/breadcrumb.html' %}
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Session Details</h5>
+
+                    {% include 'components/alerts.html' %}
+
+                    <!-- Session Form -->
+                    <form method="POST" action="" class="row g-3 needs-validation" id="sessionForm" novalidate>
+                        {% csrf_token %}
+
+                        <div class="col-md-6">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
+                            {{ form.name }}
+                            <div class="invalid-feedback" id="nameError">{{ form.name.errors|first }}</div>
+                            <div class="form-text small">{{ form.name.help_text }}</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            {# Spacer or another field if needed #}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="{{ form.start_date.id_for_label }}" class="form-label">{{ form.start_date.label }}</label>
+                             {{ form.start_date }}
+                            <div class="invalid-feedback">{{ form.start_date.errors|first }}</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="{{ form.end_date.id_for_label }}" class="form-label">{{ form.end_date.label }}</label>
+                             {{ form.end_date }}
+                            <div class="invalid-feedback">{{ form.end_date.errors|first }}</div>
+                        </div>
+
+                        {# is_active field is handled by the Activate button in the list view #}
+                        {# If you need it here, uncomment:
+                         <div class="col-12">
+                            <div class="form-check">
+                                {{ form.is_active }}
+                                <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                    {{ form.is_active.label }}
+                                </label>
+                            </div>
+                            <div class="form-text small text-danger">Warning: Setting this will deactivate other sessions. Use the 'Activate' button in the list view instead if unsure.</div>
+                        </div>
+                        #}
+
+                         {% if form.non_field_errors %}
+                            <div class="col-12 text-danger small">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary">{% if session %}Update{% else %}Create{% endif %} Session</button>
+                            <a href="{% url 'academics:session_list' %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form><!-- End Session Form -->
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const sessionNameInput = document.getElementById("{{ form.name.id_for_label }}");
+        const nameErrorDiv = document.getElementById("nameError");
+        const form = document.getElementById("sessionForm");
+        const sessionId = "{{ session.id|default:'' }}"; // Get session ID if editing
+
+        let debounceTimeout;
+
+        sessionNameInput.addEventListener('input', function() {
+            clearTimeout(debounceTimeout);
+            const nameValue = this.value.trim();
+
+             // Clear previous error
+             nameErrorDiv.textContent = "";
+             sessionNameInput.classList.remove('is-invalid');
+
+            if (nameValue.length < 4) { // Basic client-side check
+                 // Optional: Add feedback like 'Name is too short'
+                 return;
+            }
+
+            debounceTimeout = setTimeout(() => {
+                fetch(`{% url 'academics:check_session_name_ajax' %}?name=${encodeURIComponent(nameValue)}&session_id=${sessionId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.exists) {
+                            nameErrorDiv.textContent = "A session with this name already exists.";
+                            sessionNameInput.classList.add('is-invalid');
+                            sessionNameInput.setCustomValidity("Session name exists"); // for HTML5 validation
+                        } else {
+                             nameErrorDiv.textContent = ""; // Clear error
+                             sessionNameInput.classList.remove('is-invalid');
+                             sessionNameInput.setCustomValidity(""); // Reset validity
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error checking session name:', error);
+                    });
+            }, 500); // Wait 500ms after user stops typing
+        });
+
+         // --- Date Validation ---
+         const startDateInput = document.getElementById("{{ form.start_date.id_for_label }}");
+         const endDateInput = document.getElementById("{{ form.end_date.id_for_label }}");
+
+         function validateDates() {
+             const startDate = new Date(startDateInput.value);
+             const endDate = new Date(endDateInput.value);
+
+             if (startDateInput.value && endDateInput.value && startDate >= endDate) {
+                 endDateInput.setCustomValidity('End date must be after start date.');
+                 endDateInput.classList.add('is-invalid');
+             } else {
+                 endDateInput.setCustomValidity('');
+                 endDateInput.classList.remove('is-invalid');
+             }
+         }
+
+         startDateInput.addEventListener('change', validateDates);
+         endDateInput.addEventListener('change', validateDates);
+         validateDates(); // Initial check
+
+        // --- Bootstrap Validation Activation ---
+        form.addEventListener('submit', function (event) {
+             validateDates(); // Re-validate dates on submit
+             if (!form.checkValidity() || sessionNameInput.classList.contains('is-invalid') || endDateInput.classList.contains('is-invalid')) {
+              event.preventDefault();
+              event.stopPropagation();
+              // Ensure invalid feedback is shown
+              nameErrorDiv.style.display = sessionNameInput.classList.contains('is-invalid') ? 'block' : 'none';
+              endDateInput.nextElementSibling.style.display = endDateInput.classList.contains('is-invalid') ? 'block' : 'none';
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+</script>
+{% endblock %}

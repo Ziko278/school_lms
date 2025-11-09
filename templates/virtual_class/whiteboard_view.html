@@ -1,0 +1,275 @@
+{% extends 'base/base_student.html' %}
+{% load static %}
+
+{% block title %}{{ whiteboard.title }} | {{ school_info.school_name }}{% endblock %}
+
+{% block extra_styles %}
+<!-- Whiteboard View Styles -->
+<style>
+    #whiteboardContainer {
+        position: relative;
+        width: 100%;
+        min-height: 500px;
+        height: calc(100vh - 250px);
+        border: 2px solid #dee2e6;
+        background-color: #ffffff;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    #whiteboardCanvas {
+        display: block;
+    }
+    .top-controls {
+        padding: 10px 0;
+    }
+    /* Ensure canvas doesn't allow interaction */
+    .canvas-container {
+        pointer-events: none;
+    }
+    .info-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        margin-right: 0.5rem;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        font-size: 0.875rem;
+    }
+</style>
+{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>View Whiteboard</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'virtual_class:student_whiteboard_list' %}">Whiteboards</a></li>
+            <li class="breadcrumb-item active">{{ whiteboard.title }}</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ whiteboard.title }}</h5>
+                    <div class="mb-3">
+                        <span class="info-badge">
+                            <i class="bi bi-book text-primary"></i>
+                            <strong>{{ whiteboard.course_allocation.course.code }}</strong>
+                        </span>
+                        <span class="info-badge">
+                            <i class="bi bi-calendar3 text-success"></i>
+                            {{ whiteboard.session.name }}
+                        </span>
+                        <span class="info-badge">
+                            <i class="bi bi-person text-info"></i>
+                            {{ whiteboard.course_allocation.lecturer.user.get_full_name|default:whiteboard.course_allocation.lecturer.user.username }}
+                        </span>
+                        <span class="info-badge">
+                            <i class="bi bi-clock text-warning"></i>
+                            {{ whiteboard.updated_at|date:"M d, Y h:i A" }}
+                        </span>
+                    </div>
+
+                    {% include 'components/alerts.html' %}
+
+                    <div class="top-controls text-end mb-2 non-printable">
+                        <button id="downloadPngBtn" class="btn btn-outline-primary btn-sm" disabled>
+                            <i class="bi bi-image me-1"></i> Download PNG
+                        </button>
+                        <a href="{% url 'virtual_class:student_whiteboard_list' %}" class="btn btn-secondary btn-sm">
+                            <i class="bi bi-arrow-left me-1"></i> Back to List
+                        </a>
+                    </div>
+
+                    <!-- Loading Indicator -->
+                    <div id="loadingIndicator" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Loading whiteboard content...</p>
+                    </div>
+
+                    <!-- Whiteboard Canvas Container -->
+                    <div id="whiteboardContainer" style="display: none;">
+                        <canvas id="whiteboardCanvas"></canvas>
+                    </div>
+
+                    {# Hidden field to pass content to JS #}
+                    <script id="whiteboardData" type="application/json">{{ whiteboard.content|safe }}</script>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- Fabric.js Library - Must load before whiteboard script -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, initializing whiteboard viewer...');
+
+    const canvasContainer = document.getElementById('whiteboardContainer');
+    const canvasElement = document.getElementById('whiteboardCanvas');
+    const whiteboardDataElement = document.getElementById('whiteboardData');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const downloadBtn = document.getElementById('downloadPngBtn');
+    let fabricCanvas;
+
+    // Check if Fabric.js loaded
+    if (typeof fabric === 'undefined') {
+        console.error('Fabric.js not loaded!');
+        alert('Error: Drawing library failed to load. Please refresh the page.');
+        return;
+    }
+
+    // Initialize Fabric.js Canvas in Read-Only Mode
+    function initializeCanvas() {
+        console.log('Initializing canvas...');
+        try {
+            // Use StaticCanvas for non-interactive view
+            fabricCanvas = new fabric.StaticCanvas(canvasElement, {
+                backgroundColor: '#ffffff',
+                renderOnAddRemove: false,
+                selection: false,
+            });
+
+            console.log('Canvas created:', fabricCanvas);
+            resizeCanvas();
+            loadContent();
+
+        } catch (error) {
+            console.error('Error initializing canvas:', error);
+            loadingIndicator.innerHTML = '<div class="alert alert-danger">Failed to initialize whiteboard viewer.</div>';
+        }
+    }
+
+    // Resize canvas to fit container
+    function resizeCanvas() {
+        if (!fabricCanvas || !canvasContainer) {
+            console.log('Canvas or container not ready for resize');
+            return;
+        }
+
+        const width = canvasContainer.clientWidth || 800; // Fallback width
+        const height = canvasContainer.clientHeight || 600; // Fallback height
+
+        console.log('Resizing canvas to:', width, 'x', height);
+
+        fabricCanvas.setWidth(width);
+        fabricCanvas.setHeight(height);
+        fabricCanvas.renderAll();
+    }
+
+    // Setup resize observer
+    const resizeObserver = new ResizeObserver(entries => {
+        clearTimeout(window.resizeTimeout);
+        window.resizeTimeout = setTimeout(resizeCanvas, 150);
+    });
+
+    if (canvasContainer) {
+        resizeObserver.observe(canvasContainer);
+    }
+
+    // Load content from the hidden script tag
+    function loadContent() {
+        console.log('Loading content...');
+
+        if (!whiteboardDataElement || !fabricCanvas) {
+            console.error('Whiteboard data element or canvas not found');
+            loadingIndicator.innerHTML = '<div class="alert alert-danger">Error: Could not load whiteboard data.</div>';
+            return;
+        }
+
+        try {
+            const contentJsonString = whiteboardDataElement.textContent.trim();
+            console.log('Content length:', contentJsonString.length);
+
+            if (!contentJsonString || contentJsonString === '') {
+                console.warn('No whiteboard content found');
+                loadingIndicator.innerHTML = '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i>This whiteboard is empty.</div>';
+                canvasContainer.style.display = 'block';
+                fabricCanvas.renderAll();
+                return;
+            }
+
+            // Parse JSON
+            const contentJson = JSON.parse(contentJsonString);
+            console.log('Parsed JSON:', contentJson);
+
+            // Load into canvas
+            fabricCanvas.loadFromJSON(contentJson, () => {
+                console.log('Content loaded successfully');
+
+                // Ensure objects are not selectable
+                fabricCanvas.forEachObject(function(object) {
+                    object.selectable = false;
+                    object.evented = false;
+                });
+
+                fabricCanvas.renderAll();
+
+                // Hide loading, show canvas
+                loadingIndicator.style.display = 'none';
+                canvasContainer.style.display = 'block';
+
+                // Enable download button
+                downloadBtn.disabled = false;
+                setupDownload();
+
+                console.log('Whiteboard viewer ready');
+            }, (o, error) => {
+                if (error) {
+                    console.error('Error loading object:', error);
+                }
+            });
+
+        } catch (e) {
+            console.error('Error parsing/loading whiteboard content:', e);
+            loadingIndicator.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>Error loading whiteboard content. The data may be corrupted.</div>';
+        }
+    }
+
+    // Setup Download Button
+    function setupDownload() {
+        console.log('Setting up download functionality');
+
+        if (downloadBtn && fabricCanvas) {
+            downloadBtn.addEventListener('click', () => {
+                try {
+                    console.log('Generating PNG...');
+                    const dataURL = fabricCanvas.toDataURL({
+                        format: 'png',
+                        quality: 1.0,
+                        multiplier: 2 // Higher resolution
+                    });
+
+                    const link = document.createElement('a');
+                    const filename = "{{ whiteboard.title|slugify|default:'whiteboard-view' }}.png";
+                    link.download = filename;
+                    link.href = dataURL;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+
+                    console.log('Download initiated');
+                } catch (error) {
+                    console.error('Download error:', error);
+                    alert('Failed to download whiteboard. Please try again.');
+                }
+            });
+        }
+    }
+
+    // Initialize
+    initializeCanvas();
+});
+</script>
+{% endblock %}

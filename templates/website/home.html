@@ -1,0 +1,234 @@
+{% extends 'base/base_public.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Home | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="bg-gray-100">
+
+    <!-- Hero Section -->
+    <section class="bg-[#366092] text-white py-20 md:py-32"> {# Applied primary color #}
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+
+            <h1 class="text-4xl md:text-6xl font-bold mb-4">{{ school_info.school_name }}</h1>
+            <p class="text-lg md:text-xl mb-8">{{ school_info.motto|default:"Excellence in Education" }}</p>
+            <div class="space-y-4 sm:space-y-0 sm:space-x-4">
+                {% if allow_registration %}
+                    <a href="{% url 'website:admission_portal' %}" class="inline-block bg-[#2ECC71] hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-lg transition duration-300">Apply Now</a> {# Applied secondary color #}
+                {% endif %}
+                <a href="{% url 'accounts:login' %}" class="inline-block bg-white hover:bg-gray-200 text-[#366092] font-bold py-3 px-6 rounded-lg text-lg transition duration-300">Student Portal</a> {# Applied primary color text #}
+            </div>
+        </div>
+    </section>
+
+    <!-- Statistics Section -->
+    <section class="py-16 bg-white" x-data="{
+        animateCounters() {
+            const counters = document.querySelectorAll('.stat-counter');
+            counters.forEach(counter => {
+                // Check if already animated
+                if (counter.getAttribute('data-animated') === 'true') return;
+
+                const target = +counter.getAttribute('data-target');
+                let current = 0;
+                // Calculate increment based on target for smoother animation within approx 1 second
+                const duration = 1000; // ms
+                const steps = 50; // number of steps
+                const increment = target / steps;
+                const stepDuration = duration / steps;
+
+
+                const updateCounter = () => {
+                    current += increment;
+                    if (current < target) {
+                        counter.innerText = Math.ceil(current).toLocaleString();
+                        setTimeout(updateCounter, stepDuration);
+                    } else {
+                        counter.innerText = target.toLocaleString();
+                        counter.setAttribute('data-animated', 'true'); // Mark as animated
+                    }
+                };
+                updateCounter();
+            });
+        }
+    }" x-intersect.once="animateCounters"> {# Use .once to animate only the first time #}
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 text-center">
+                <div class="p-6 bg-gray-50 rounded-lg shadow-sm">
+                    <i class="bi bi-people-fill text-4xl text-[#366092] mb-3"></i> {# Primary Color #}
+                    <div class="text-4xl font-bold stat-counter" data-target="{{ total_students|default:0 }}">0</div>
+                    <p class="text-gray-600 mt-1">Students Enrolled</p>
+                </div>
+                <div class="p-6 bg-gray-50 rounded-lg shadow-sm">
+                    <i class="bi bi-person-badge-fill text-4xl text-[#2ECC71] mb-3"></i> {# Secondary Color #}
+                    <div class="text-4xl font-bold stat-counter" data-target="{{ total_staff|default:0 }}">0</div>
+                    <p class="text-gray-600 mt-1">Dedicated Staff</p>
+                </div>
+                <div class="p-6 bg-gray-50 rounded-lg shadow-sm">
+                    <i class="bi bi-building text-4xl text-[#3498DB] mb-3"></i> {# Info Color #}
+                    <div class="text-4xl font-bold stat-counter" data-target="{{ total_departments|default:0 }}">0</div>
+                    <p class="text-gray-600 mt-1">Departments</p>
+                </div>
+                <div class="p-6 bg-gray-50 rounded-lg shadow-sm">
+                     <i class="bi bi-mortarboard-fill text-4xl text-[#F39C12] mb-3"></i> {# Warning Color #}
+                    <div class="text-4xl font-bold stat-counter" data-target="{{ total_programs|default:0 }}">0</div>
+                    <p class="text-gray-600 mt-1">Academic Programs</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="py-16">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-center text-[#366092] mb-12">Why Choose Us?</h2> {# Primary Color #}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="text-center p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition duration-300">
+                    <i class="bi bi-laptop text-5xl text-[#2ECC71] mb-4"></i> {# Secondary Color #}
+                    <h3 class="text-xl font-semibold mb-2">Online Learning Portal</h3>
+                    <p class="text-gray-600">Access materials, submit assignments, and view results anytime, anywhere.</p>
+                </div>
+                <div class="text-center p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition duration-300">
+                     <i class="bi bi-book-half text-5xl text-[#3498DB] mb-4"></i> {# Info Color #}
+                    <h3 class="text-xl font-semibold mb-2">Course Resources</h3>
+                    <p class="text-gray-600">Download lecture notes, videos, and other materials uploaded by lecturers.</p>
+                </div>
+                <div class="text-center p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition duration-300">
+                     <i class="bi bi-clipboard-check text-5xl text-[#27AE60] mb-4"></i> {# Success Color #}
+                    <h3 class="text-xl font-semibold mb-2">Digital Results</h3>
+                    <p class="text-gray-600">Check your semester results and academic transcript easily online.</p>
+                </div>
+                <div class="text-center p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition duration-300">
+                     <i class="bi bi-camera-video-fill text-5xl text-[#F39C12] mb-4"></i> {# Warning Color #}
+                    <h3 class="text-xl font-semibold mb-2">Virtual Classes</h3>
+                    <p class="text-gray-600">Engage with recordings and interactive whiteboard sessions.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- News & Announcements Section -->
+    <section class="py-16 bg-white" x-data="{ newsItems: [], loading: true, error: false }" x-init="
+        fetch('{% url 'website:get_latest_news_ajax' %}')
+            .then(response => {
+                if (!response.ok) { throw new Error('Network response was not ok'); }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    newsItems = data.news;
+                } else {
+                    error = true;
+                    console.error('API Error:', data.message || 'Unknown error');
+                }
+            })
+            .catch((fetchError) => {
+                error = true;
+                console.error('Fetch Error:', fetchError);
+            })
+            .finally(() => loading = false)
+    ">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-center text-[#366092] mb-12">Latest News & Announcements</h2> {# Primary Color #}
+            <div x-show="loading" class="text-center text-gray-500 py-8">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+                <p class="mt-2">Loading news...</p>
+            </div>
+            <div x-show="!loading && error" class="text-center text-red-600 bg-red-100 p-4 rounded-md">
+                <i class="bi bi-exclamation-triangle-fill mr-2"></i>Could not load news at this time.
+            </div>
+            <div x-show="!loading && !error && newsItems.length === 0" class="text-center text-gray-500 py-8">
+                <i class="bi bi-info-circle text-2xl mb-2"></i>
+                <p>No recent news available.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" x-show="!loading && !error && newsItems.length > 0">
+                <template x-for="item in newsItems" :key="item.id">
+                    <div class="bg-gray-50 rounded-lg shadow-sm overflow-hidden flex flex-col">
+                        {# Placeholder for news image if available - uncomment and adjust if needed
+                        <img :src="item.image_url || 'https://placehold.co/600x400/eeeeee/cccccc?text=News'"
+                             alt="" class="w-full h-48 object-cover">
+                        #}
+                        <div class="p-6 flex flex-col flex-grow">
+                            <p class="text-sm text-gray-500 mb-1" x-text="item.date"></p>
+                            <h3 class="text-xl font-semibold mb-2 text-gray-800" x-text="item.title"></h3>
+                            <p class="text-gray-600 mb-4 flex-grow" x-text="item.snippet"></p>
+                            <a :href="item.url" class="text-[#366092] hover:underline self-start">Read More &raquo;</a> {# Primary Color #}
+                        </div>
+                    </div>
+                </template>
+                 <!-- Placeholder Content (Shown if AJAX fails or returns empty, can be removed if AJAX endpoint is live) -->
+                 <template x-if="!loading && (error || newsItems.length === 0)">
+                     <>
+                        <div class="bg-gray-50 rounded-lg shadow-sm overflow-hidden flex flex-col">
+                             <div class="p-6 flex flex-col flex-grow">
+                                 <p class="text-sm text-gray-500 mb-1">Oct 20, 2025</p>
+                                 <h3 class="text-xl font-semibold mb-2 text-gray-800">Mid-Semester Break Announced</h3>
+                                 <p class="text-gray-600 mb-4 flex-grow">The college will observe a mid-semester break from Nov 1st to Nov 5th.</p>
+                                 <a href="#" class="text-[#366092] hover:underline self-start">Read More &raquo;</a>
+                             </div>
+                         </div>
+                         <div class="bg-gray-50 rounded-lg shadow-sm overflow-hidden flex flex-col">
+                             <div class="p-6 flex flex-col flex-grow">
+                                 <p class="text-sm text-gray-500 mb-1">Oct 15, 2025</p>
+                                 <h3 class="text-xl font-semibold mb-2 text-gray-800">Guest Lecture on AI</h3>
+                                 <p class="text-gray-600 mb-4 flex-grow">Prof. Adekunle will deliver a lecture on the future of AI in education.</p>
+                                 <a href="#" class="text-[#366092] hover:underline self-start">Read More &raquo;</a>
+                             </div>
+                         </div>
+                         <div class="bg-gray-50 rounded-lg shadow-sm overflow-hidden flex flex-col">
+                             <div class="p-6 flex flex-col flex-grow">
+                                 <p class="text-sm text-gray-500 mb-1">Oct 10, 2025</p>
+                                 <h3 class="text-xl font-semibold mb-2 text-gray-800">Sports Day Schedule Released</h3>
+                                 <p class="text-gray-600 mb-4 flex-grow">Get ready for an exciting day of sports and activities on Oct 28th.</p>
+                                 <a href="#" class="text-[#366092] hover:underline self-start">Read More &raquo;</a>
+                             </div>
+                         </div>
+                     </>
+                 </template>
+                 <!-- End Placeholder -->
+            </div>
+            <!-- Optional: Link to a full news page -->
+            <!-- <div class="text-center mt-12">
+                <a href="#" class="text-[#366092] hover:underline font-semibold">View All News &raquo;</a>
+            </div> -->
+        </div>
+    </section>
+
+    <!-- Quick Links Section -->
+    <section class="py-16 bg-gray-200">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-center text-[#366092] mb-12">Quick Links</h2> {# Primary Color #}
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 text-center">
+                 <a href="{% url 'website:admission_portal' %}" class="block p-6 bg-white rounded-lg shadow-sm hover:shadow-md transition duration-300 transform hover:-translate-y-1">
+                    <i class="bi bi-person-check-fill text-4xl text-[#366092] mb-3"></i> {# Primary Color #}
+                    <span class="font-medium text-gray-700 block">Admission</span>
+                 </a>
+                 <a href="{% url 'accounts:login' %}" class="block p-6 bg-white rounded-lg shadow-sm hover:shadow-md transition duration-300 transform hover:-translate-y-1">
+                    <i class="bi bi-box-arrow-in-right text-4xl text-[#366092] mb-3"></i> {# Primary Color #}
+                    <span class="font-medium text-gray-700 block">Student Portal</span>
+                 </a>
+                 <a href="{% url 'website:departments' %}" class="block p-6 bg-white rounded-lg shadow-sm hover:shadow-md transition duration-300 transform hover:-translate-y-1">
+                    <i class="bi bi-building text-4xl text-[#366092] mb-3"></i> {# Primary Color #}
+                    <span class="font-medium text-gray-700 block">Departments</span>
+                 </a>
+                 <a href="{% url 'website:programs' %}" class="block p-6 bg-white rounded-lg shadow-sm hover:shadow-md transition duration-300 transform hover:-translate-y-1">
+                    <i class="bi bi-mortarboard-fill text-4xl text-[#366092] mb-3"></i> {# Primary Color #}
+                    <span class="font-medium text-gray-700 block">Programs</span>
+                 </a>
+                 <a href="{% url 'website:contact' %}" class="block p-6 bg-white rounded-lg shadow-sm hover:shadow-md transition duration-300 transform hover:-translate-y-1 col-span-2 md:col-span-1">
+                    <i class="bi bi-envelope-fill text-4xl text-[#366092] mb-3"></i> {# Primary Color #}
+                    <span class="font-medium text-gray-700 block">Contact Us</span>
+                 </a>
+            </div>
+        </div>
+    </section>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+    <!-- Alpine JS Intersect plugin included in base_public.html -->
+{% endblock %}
+

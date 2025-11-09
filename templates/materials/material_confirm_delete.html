@@ -1,0 +1,54 @@
+{% extends 'base/base_staff.html' %}
+{% load static %}
+
+{% block title %}Confirm Delete | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Confirm Material Deletion</h1>
+     <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'materials:material_list' %}">Materials</a></li>
+            <li class="breadcrumb-item active">Confirm Delete</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card border-danger border-top border-3 border-0">
+                <div class="card-body">
+                     <h5 class="card-title text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Confirm Deletion</h5>
+
+                    {% include 'components/alerts.html' %}
+
+                    <p>Are you sure you want to delete the following course material?</p>
+
+                     <ul class="list-group list-group-flush mb-3">
+                        <li class="list-group-item"><strong>Title:</strong> {{ material.title }}</li>
+                        <li class="list-group-item"><strong>Course:</strong> {{ material.course_allocation.course.code }} - {{ material.course_allocation.course.title }}</li>
+                        <li class="list-group-item"><strong>Type:</strong> {{ material.get_material_type_display }}</li>
+                         {% if material.file %}
+                         <li class="list-group-item"><strong>File:</strong> {{ material.file.name|cut:"course_materials/" }}</li>
+                         {% elif material.external_link %}
+                          <li class="list-group-item"><strong>Link:</strong> {{ material.external_link }}</li>
+                         {% endif %}
+                        <li class="list-group-item"><strong>Uploaded:</strong> {{ material.uploaded_at|date:"M d, Y, H:i" }}</li>
+                    </ul>
+
+                     <p class="text-danger fw-bold">This action cannot be undone. The associated file (if any) will also be permanently deleted.</p>
+
+                    <form method="POST" action="{% url 'materials:material_delete' material.id %}" class="text-center">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i> Yes, Delete Material</button>
+                        <a href="{% url 'materials:material_list' %}" class="btn btn-secondary">Cancel</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

@@ -1,0 +1,221 @@
+{% extends 'base/base_admin.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Admitted Student Details | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Admitted Student Details</h1>
+    {% include 'components/breadcrumb.html' %}
+</div><!-- End Page Title -->
+
+<section class="section profile">
+    <div class="row">
+        <div class="col-xl-4">
+            {# Placeholder for profile picture if added to AdmittedStudent model later #}
+            <div class="card">
+                <div class="card-body profile-card pt-4 d-flex flex-column align-items-center">
+                    <i class="bi bi-person-bounding-box display-1 text-secondary"></i> {# Placeholder Icon #}
+                    <h2>{{ admitted_student.first_name }} {{ admitted_student.last_name }}</h2>
+                    <h3>{{ admitted_student.jamb_registration_number }}</h3>
+                    {# Social links placeholder #}
+                    {# <div class="social-links mt-2"> ... </div> #}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-8">
+            <div class="card">
+                <div class="card-body pt-3">
+                    <!-- Bordered Tabs -->
+                    <ul class="nav nav-tabs nav-tabs-bordered">
+                        <li class="nav-item">
+                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#profile-overview">Overview</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#payment-history">Payment History</button>
+                        </li>
+                        {# Add more tabs if needed #}
+                    </ul>
+                    <div class="tab-content pt-2">
+
+                        <div class="tab-pane fade show active profile-overview" id="profile-overview">
+                            <h5 class="card-title">Admission Details</h5>
+
+                            <div class="row">
+                                <div class="col-lg-3 col-md-4 label ">Full Name</div>
+                                <div class="col-lg-9 col-md-8">{{ admitted_student.first_name }} {{ admitted_student.last_name }}</div>
+                            </div>
+
+                             <div class="row">
+                                <div class="col-lg-3 col-md-4 label">JAMB Reg No.</div>
+                                <div class="col-lg-9 col-md-8">{{ admitted_student.jamb_registration_number }}</div>
+                            </div>
+
+                             <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Admission PIN</div>
+                                <div class="col-lg-9 col-md-8">
+                                     <span class="admission-pin" title="Click to reveal">{{ admitted_student.admission_pin|slice:":3" }}*******</span>
+                                     <span class="revealed-pin d-none">{{ admitted_student.admission_pin }}</span>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Department</div>
+                                <div class="col-lg-9 col-md-8">{{ admitted_student.department.name }} ({{ admitted_student.department.code }})</div>
+                            </div>
+
+                             <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Program</div>
+                                <div class="col-lg-9 col-md-8">{{ admitted_student.program.name }}</div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Admission Session</div>
+                                <div class="col-lg-9 col-md-8">{{ admitted_student.admission_session.name }}</div>
+                            </div>
+
+                             <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Admission Status</div>
+                                <div class="col-lg-9 col-md-8">
+                                    <span class="badge
+                                        {% if admitted_student.admission_status == 'pending' %} bg-warning text-dark
+                                        {% elif admitted_student.admission_status == 'completed' %} bg-success
+                                        {% elif admitted_student.admission_status == 'expired' %} bg-danger
+                                        {% else %} bg-secondary {% endif %}">
+                                        {{ admitted_student.get_admission_status_display }}
+                                    </span>
+                                </div>
+                            </div>
+
+                             <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Email</div>
+                                <div class="col-lg-9 col-md-8">{{ admitted_student.email }}</div>
+                            </div>
+
+                             <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Phone</div>
+                                <div class="col-lg-9 col-md-8">{{ admitted_student.phone_number }}</div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Offered Course Codes</div>
+                                <div class="col-lg-9 col-md-8">
+                                    {% for code in admitted_student.get_course_codes_list %}
+                                        <span class="badge bg-light text-dark me-1">{{ code }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <div class="mt-4">
+                                {% if admitted_student.admission_status == 'pending' %}
+                                    <button type="button" class="btn btn-primary btn-sm resend-email-btn" data-id="{{ admitted_student.id }}">
+                                         <i class="bi bi-envelope me-1"></i> Resend Admission Email
+                                    </button>
+                                {% endif %}
+                                <a href="{% url 'admissions:admitted_list' %}" class="btn btn-secondary btn-sm">Back to List</a>
+                            </div>
+
+                        </div><!-- End Overview Tab -->
+
+                         <div class="tab-pane fade pt-3" id="payment-history">
+                            <h5 class="card-title">Payment Records</h5>
+                             <div class="table-responsive">
+                                <table class="table table-sm table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Reference</th>
+                                            <th>Amount</th>
+                                            <th>Type</th>
+                                            <th>Status</th>
+                                            <th>Date</th>
+                                            <th>Method</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for payment in payments %}
+                                        <tr>
+                                            <td>{{ payment.reference }}</td>
+                                            <td>₦{{ payment.amount|intcomma }}</td>
+                                            <td>{{ payment.get_payment_type_display }}</td>
+                                            <td>
+                                                <span class="badge
+                                                    {% if payment.status == 'pending' %} bg-warning text-dark
+                                                    {% elif payment.status == 'success' %} bg-success
+                                                    {% elif payment.status == 'failed' %} bg-danger
+                                                    {% else %} bg-secondary {% endif %}">
+                                                    {{ payment.get_status_display }}
+                                                </span>
+                                            </td>
+                                            <td>{{ payment.payment_date|date:"Y-m-d H:i"|default:"N/A" }}</td>
+                                            <td>{{ payment.payment_method }}</td>
+                                            <td>
+                                                <a href="{% url 'payments:payment_detail' payment.id %}" class="btn btn-info btn-sm" title="View Payment"><i class="bi bi-eye"></i></a>
+                                                {% if payment.status == 'success' %}
+                                                 <a href="{% url 'payments:payment_receipt' payment.id %}" class="btn btn-secondary btn-sm" title="Download Receipt"><i class="bi bi-receipt"></i></a>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="7" class="text-center text-muted">No payment records found for this student.</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div><!-- End Payment History Tab -->
+
+                    </div><!-- End Bordered Tabs -->
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Resend Email Form (Hidden) -->
+<form id="resendEmailForm" method="post" class="d-none">
+    {% csrf_token %}
+</form>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Reveal Admission PIN on click
+    const pinSpan = document.querySelector('.admission-pin');
+    if (pinSpan) {
+        pinSpan.addEventListener('click', function() {
+            const revealedPin = this.nextElementSibling;
+            if (revealedPin && revealedPin.classList.contains('revealed-pin')) {
+                this.textContent = revealedPin.textContent;
+                this.style.cursor = 'default';
+                this.title = 'Admission PIN';
+            }
+        });
+        pinSpan.style.cursor = 'pointer'; // Make it look clickable
+    }
+
+    // Resend Email button
+     const resendButton = document.querySelector('.resend-email-btn');
+     const resendForm = document.getElementById('resendEmailForm');
+
+     if (resendButton && resendForm) {
+        resendButton.addEventListener('click', function() {
+            const studentId = this.dataset.id;
+            const studentName = "{{ admitted_student.first_name }} {{ admitted_student.last_name }}"; // Get name from context
+
+            if (confirm(`Are you sure you want to resend the admission email (with PIN) to ${studentName}?`)) {
+                 resendForm.action = `/admissions/resend-email/${studentId}/`; // Adjust URL if needed
+                 resendForm.submit();
+                 this.disabled = true;
+                 this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Sending...';
+            }
+        });
+     }
+});
+</script>
+{% endblock %}

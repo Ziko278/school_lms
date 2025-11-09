@@ -1,0 +1,186 @@
+{% extends 'base/base_staff.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Attendance Report: {{ allocation.course.code }} | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Attendance Report</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'attendance:attendance_list' %}">Attendance</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'attendance:attendance_report' %}">Report</a></li>
+            <li class="breadcrumb-item active">{{ allocation.course.code }}</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<section class="section printable-section">
+    <div class="row">
+        <div class="col-lg-12">
+
+            <div class="card">
+                 <div class="card-header bg-light d-flex justify-content-between align-items-center non-printable">
+                    <div>
+                        <a href="{% url 'attendance:attendance_report' %}" class="btn btn-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i> Select Another Course</a>
+                    </div>
+                     <div>
+                        <a href="?allocation={{ allocation.id }}&export=excel" class="btn btn-success btn-sm"><i class="bi bi-file-earmark-excel me-1"></i> Export to Excel</a>
+                        <button onclick="window.print()" class="btn btn-info btn-sm text-white"><i class="bi bi-printer me-1"></i> Print Report</button>
+                     </div>
+                 </div>
+                <div class="card-body">
+                    <div class="text-center mt-4 mb-3 printable-only">
+                         <h4>{{ school_info.school_name|upper }}</h4>
+                         <h6>ATTENDANCE REPORT</h6>
+                    </div>
+
+                    <h5 class="card-title pt-0">Report for: {{ allocation.course.code }} - {{ allocation.course.title }}</h5>
+                    <p><strong>Session:</strong> {{ allocation.session.name }} | <strong>Semester:</strong> {{ allocation.semester.get_name_display }} | <strong>Lecturer:</strong> {{ allocation.lecturer.user.get_full_name }}</p>
+
+                    {% if attendance_data %}
+                    <div class="table-responsive mt-3">
+                        <table class="table table-sm table-bordered table-striped attendance-report-table">
+                            <thead>
+                                <tr class="text-center">
+                                    <th rowspan="2" class="align-middle">#</th>
+                                    <th rowspan="2" class="align-middle">Matric No.</th>
+                                    <th rowspan="2" class="align-middle">Name</th>
+                                    <th colspan="{{ attendances|length }}">Attendance Dates</th>
+                                    <th colspan="4" class="bg-light">Summary</th>
+                                </tr>
+                                <tr class="text-center date-header">
+                                    {% for att in attendances %}
+                                        <th>{{ att.date|date:"d/m" }}</th>
+                                    {% endfor %}
+                                    <th class="bg-light-success">P</th>
+                                    <th class="bg-light-danger">A</th>
+                                    <th class="bg-light-warning">L</th>
+                                    <th class="bg-light">%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for data in attendance_data %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ data.student.matric_number }}</td>
+                                    <td>{{ data.student.user.get_full_name }}</td>
+                                    {% for status in data.records %}
+                                        <td class="text-center attendance-cell">
+                                            {% if status == 'present' %}
+                                                <span class="text-success">P</span>
+                                            {% elif status == 'absent' %}
+                                                <span class="text-danger">A</span>
+                                            {% elif status == 'late' %}
+                                                <span class="text-warning">L</span>
+                                            {% else %}
+                                                 <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                    {% endfor %}
+                                     {# Summary #}
+                                    <td class="text-center fw-bold bg-light-success">{{ data.present_count }}</td>
+                                    <td class="text-center fw-bold bg-light-danger">{{ data.absent_count }}</td>
+                                    <td class="text-center fw-bold bg-light-warning">{{ data.late_count }}</td>
+                                    <td class="text-center fw-bold bg-light {% if data.percentage < 75 %} text-danger {% endif %}">{{ data.percentage|floatformat:0 }}%</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                             <tfoot>
+                                <tr>
+                                    <td colspan="3" class="text-end fw-bold">Total Sessions:</td>
+                                    <td colspan="{{ attendances|length }}" class="fw-bold">{{ attendances|length }}</td>
+                                    <td colspan="4" class="bg-light"></td> {# Empty cells for summary columns #}
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    {% else %}
+                     <div class="alert alert-light text-center mt-3" role="alert">
+                        No attendance records found for this course allocation yet, or no students are registered.
+                    </div>
+                    {% endif %}
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<style>
+.attendance-report-table th, .attendance-report-table td {
+    font-size: 0.8rem;
+    padding: 0.3rem !important;
+    white-space: nowrap;
+}
+.attendance-report-table .date-header th {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    font-size: 0.7rem;
+    padding-bottom: 0.5rem !important;
+    padding-top: 0.5rem !important;
+}
+.attendance-cell span {
+    font-weight: bold;
+}
+.bg-light-success { background-color: #eaf6ec !important; }
+.bg-light-danger { background-color: #fbe9e9 !important; }
+.bg-light-warning { background-color: #fff7e6 !important; }
+
+/* Print Styles */
+@media print {
+    body {
+        -webkit-print-color-adjust: exact !important; /* Chrome, Safari */
+        color-adjust: exact !important; /* Firefox */
+    }
+    .pagetitle, .breadcrumb, .non-printable {
+        display: none !important;
+    }
+    .printable-section {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+    }
+    .card-body {
+        padding: 0 !important;
+    }
+    .table-bordered {
+        border: 1px solid #dee2e6 !important;
+    }
+    .table-bordered th, .table-bordered td {
+        border: 1px solid #dee2e6 !important;
+    }
+    .printable-only {
+        display: block !important;
+    }
+    a { text-decoration: none !important; color: inherit !important; } /* Remove link styling for print */
+     .badge { /* Make badges printable */
+        border: 1px solid #ccc !important;
+        padding: 0.2em 0.4em !important;
+        font-size: 0.7em !important;
+        print-color-adjust: exact !important;
+     }
+      /* Ensure background colors print */
+      .bg-light-success, .bg-light-danger, .bg-light-warning, .bg-light {
+          print-color-adjust: exact !important;
+          -webkit-print-color-adjust: exact !important;
+      }
+      .text-success { color: #198754 !important; }
+      .text-danger { color: #dc3545 !important; }
+      .text-warning { color: #ffc107 !important; }
+      .text-muted { color: #6c757d !important; }
+}
+
+.printable-only { display: none; } /* Hide print header by default */
+
+</style>
+{% endblock %}

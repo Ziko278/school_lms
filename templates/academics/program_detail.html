@@ -1,0 +1,141 @@
+{% extends 'base/base_admin.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ program.name }} | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>{{ program.name }}</h1>
+    <nav>
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="{% url 'admin_site:admin_dashboard' %}">Home</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'academics:department_list' %}">Academics</a></li>
+           <li class="breadcrumb-item"><a href="{% url 'academics:department_detail' program.department.id %}">{{ program.department.name }}</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'academics:program_list' %}">Programs</a></li>
+          <li class="breadcrumb-item active">{{ program.name }}</li>
+        </ol>
+      </nav>
+</div><!-- End Page Title -->
+
+<section class="section profile"> {# Reusing profile section style #}
+    <div class="row">
+        <div class="col-xl-4">
+             <div class="card">
+                <div class="card-body profile-card pt-4 d-flex flex-column">
+                    <h5 class="card-title pb-0">{{ program.name }}</h5>
+                    <p class="small text-muted mb-2">Department: <a href="{% url 'academics:department_detail' program.department.id %}">{{ program.department.name }} ({{ program.department.code }})</a></p>
+                    <p class="small text-muted mb-2">Duration: {{ program.duration_years }} Year{{ program.duration_years|pluralize }}</p>
+                    <p class="small text-muted mb-3">Total Students: {{ program.student_count|intcomma }}</p>
+                     <p class="small">{{ program.description|default:"No description provided."|linebreaksbr }}</p>
+                 </div>
+            </div>
+        </div>
+
+        <div class="col-xl-8">
+            <div class="card">
+                <div class="card-body pt-3">
+                    <!-- Bordered Tabs -->
+                    <ul class="nav nav-tabs nav-tabs-bordered">
+                        <li class="nav-item">
+                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#program-levels">Levels</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#program-students">Students (Recent 10)</button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content pt-3">
+
+                        <!-- Levels Tab -->
+                         <div class="tab-pane fade show active" id="program-levels">
+                            <h5 class="card-title">Academic Levels</h5>
+                             {% if levels %}
+                                <ol class="list-group list-group-numbered">
+                                  {% for level in levels %}
+                                  <li class="list-group-item d-flex justify-content-between align-items-start">
+                                    <div class="ms-2 me-auto">
+                                      <div class="fw-bold">{{ level.name }} (Order: {{ level.order }})</div>
+                                      {% if level.is_entry_level %} <span class="badge bg-success rounded-pill">Entry Level</span> {% endif %}
+                                      {% if level.is_exit_level %} <span class="badge bg-danger rounded-pill">Exit Level</span> {% endif %}
+                                    </div>
+                                    <a href="{% url 'academics:level_edit' level.id %}" class="btn btn-warning btn-sm" title="Edit Level"><i class="bi bi-pencil"></i></a>
+                                  </li>
+                                  {% endfor %}
+                                </ol>
+                             {% else %}
+                                <p class="text-muted">No levels defined for this program yet.</p>
+                             {% endif %}
+                             <a href="{% url 'academics:level_create' %}?program={{ program.id }}" class="btn btn-primary btn-sm mt-3"><i class="bi bi-plus-lg"></i> Add Level</a>
+                        </div>
+
+                         <!-- Students Tab -->
+                        <div class="tab-pane fade" id="program-students">
+                             <h5 class="card-title">Students (Recent 10)</h5>
+                              {% if students %}
+                                <div class="table-responsive">
+                                <table class="table table-sm table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Matric No.</th>
+                                            <th>Name</th>
+                                            <th>Level</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for student in students %}
+                                        <tr>
+                                            <td>{{ student.matric_number }}</td>
+                                            <td>{{ student.user.get_full_name }}</td>
+                                            <td>{{ student.current_level.name }}</td>
+                                             <td><a href="{% url 'accounts:student_detail' student.id %}" class="btn btn-info btn-sm"><i class="bi bi-eye"></i></a></td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                                </div>
+                                <a href="{% url 'accounts:student_list' %}?program={{ program.id }}" class="btn btn-link btn-sm">View All Students</a>
+                              {% else %}
+                                <p class="text-muted">No students currently in this program.</p>
+                              {% endif %}
+                        </div>
+
+                    </div><!-- End Bordered Tabs -->
+
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-end">
+                         <a href="{% url 'academics:program_edit' program.id %}" class="btn btn-warning me-2"><i class="bi bi-pencil-square"></i> Edit Program</a>
+                         <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteProgramDetailModal">
+                             <i class="bi bi-trash"></i> Delete Program
+                         </button>
+                     </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteProgramDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h5 class="modal-title">Confirm Deletion</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+            Are you sure you want to delete the program <strong>{{ program.name }}</strong>?
+            <br><small class="text-danger">This action cannot be undone. Ensure there are no students or levels linked to this program.</small>
+            </div>
+            <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <form action="{% url 'academics:program_delete' program.id %}" method="post" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Delete Program</button>
+            </form>
+            </div>
+        </div>
+    </div>
+</div><!-- End Delete Modal -->
+{% endblock %}

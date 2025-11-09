@@ -1,0 +1,52 @@
+{% extends 'base/base_public.html' %} {# Or 'base/base_admin.html' if more appropriate for logged-in users #}
+{% load static %}
+
+{% block title %}Page Not Found | {{ school_info.school_name }}{% endblock %}
+
+{% block content %}
+<main>
+    <div class="container">
+
+      <section class="section error-404 min-vh-100 d-flex flex-column align-items-center justify-content-center">
+        <h1>404</h1>
+        <h2>The page you are looking for doesn't exist.</h2>
+        <p class="text-muted">Sorry, we couldn't find the page you requested.</p>
+        <a class="btn btn-primary" href="{% url 'website:home' %}">
+            <i class="bi bi-house me-1"></i> Back to home
+        </a>
+        <img src="{% static 'admin_site/images/not-found.svg' %}" class="img-fluid py-5" alt="Page Not Found" style="max-width: 400px;">
+
+        <div class="credits mt-4">
+          <!-- Optional: Add a search bar or helpful links -->
+           <p class="small text-muted">Need help? <a href="{% url 'website:contact' %}">Contact support</a>.</p>
+        </div>
+      </section>
+
+    </div>
+  </main><!-- End #main -->
+{% endblock %}
+
+{% block extra_scripts %}
+<style>
+/* Optional: Custom styling for the 404 page */
+.error-404 h1 {
+    font-size: 180px;
+    font-weight: 700;
+    color: var(--bs-primary); /* Use primary color */
+    margin-bottom: 0;
+    line-height: 150px;
+    text-shadow: 3px 3px 5px rgba(0,0,0,0.1);
+}
+.error-404 h2 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #444;
+    margin-bottom: 20px;
+}
+.error-404 .btn {
+    margin-top: 15px;
+    padding: 10px 25px;
+}
+</style>
+{% endblock %}
+

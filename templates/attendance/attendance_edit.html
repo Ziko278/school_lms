@@ -1,0 +1,104 @@
+{% extends 'base/base_staff.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Edit Attendance | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Edit Attendance Session</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'attendance:attendance_list' %}">Attendance</a></li>
+            <li class="breadcrumb-item active">Edit</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Edit Attendance for {{ attendance.course_allocation.course.code }} on {{ attendance.date|date:"M d, Y" }}</h5>
+                     <p><strong>Topic Covered:</strong> {{ attendance.topic_covered }}</p>
+
+                    {% include 'components/alerts.html' %}
+
+                    <!-- Edit Form -->
+                    <form method="POST" action="" class="needs-validation" id="editAttendanceForm" novalidate>
+                        {% csrf_token %}
+
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover" id="editAttendanceTable">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Matric No.</th>
+                                        <th>Name</th>
+                                        <th class="text-center">Present</th>
+                                        <th class="text-center">Absent</th>
+                                        <th class="text-center">Late</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for record in records %}
+                                    <tr>
+                                        <td>{{ forloop.counter }}</td>
+                                        <td>{{ record.student.matric_number }}</td>
+                                        <td>{{ record.student.user.get_full_name }}</td>
+                                        <td class="text-center">
+                                            <input class="form-check-input status-radio" type="radio" name="student_{{ record.student.id }}" id="present_{{ record.student.id }}" value="present" {% if record.status == 'present' %}checked{% endif %} required>
+                                        </td>
+                                        <td class="text-center">
+                                            <input class="form-check-input status-radio" type="radio" name="student_{{ record.student.id }}" id="absent_{{ record.student.id }}" value="absent" {% if record.status == 'absent' %}checked{% endif %} required>
+                                        </td>
+                                        <td class="text-center">
+                                            <input class="form-check-input status-radio" type="radio" name="student_{{ record.student.id }}" id="late_{{ record.student.id }}" value="late" {% if record.status == 'late' %}checked{% endif %} required>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted fst-italic">
+                                           No attendance records found for this session.
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                         <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary" id="updateAttendanceBtn">
+                                <i class="bi bi-save me-1"></i> Update Attendance
+                            </button>
+                            <a href="{% url 'attendance:attendance_detail' attendance.id %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+
+                    </form><!-- End Edit Form -->
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+  'use strict';
+  // Basic Bootstrap validation
+  var form = document.getElementById('editAttendanceForm');
+  form.addEventListener('submit', function (event) {
+    if (!form.checkValidity()) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    form.classList.add('was-validated');
+  }, false);
+})();
+</script>
+{% endblock %}

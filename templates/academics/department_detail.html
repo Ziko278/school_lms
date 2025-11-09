@@ -1,0 +1,173 @@
+{% extends 'base/base_admin.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ department.name }} | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>{{ department.name }} <span class="fs-6 text-muted">({{ department.code }})</span></h1>
+    {% include 'components/breadcrumb.html' %}
+</div><!-- End Page Title -->
+
+<section class="section profile"> {# Reusing profile section style for layout #}
+    <div class="row">
+        <div class="col-xl-4">
+             <div class="card">
+                <div class="card-body profile-card pt-4 d-flex flex-column align-items-center">
+                    {# Placeholder for Department icon or image #}
+                    <i class="bi bi-building display-1 text-primary mb-3"></i>
+                    <h2>{{ department.name }}</h2>
+                    <h3>{{ department.code }}</h3>
+                    <p class="text-muted small">HOD: {% if department.hod %}{{ department.hod.user.get_full_name }}{% else %}Not Assigned{% endif %}</p>
+                 </div>
+            </div>
+             <div class="card">
+                <div class="card-body">
+                     <h5 class="card-title">Statistics</h5>
+                     <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Staff Members <span class="badge bg-primary rounded-pill">{{ department.staff_count|intcomma }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Students <span class="badge bg-info rounded-pill">{{ department.student_count|intcomma }}</span>
+                        </li>
+                         <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Programs <span class="badge bg-secondary rounded-pill">{{ programs.count|intcomma }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                             Courses <span class="badge bg-light text-dark rounded-pill">{{ total_courses|intcomma }}</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-8">
+            <div class="card">
+                <div class="card-body pt-3">
+                    <!-- Bordered Tabs -->
+                    <ul class="nav nav-tabs nav-tabs-bordered">
+                        <li class="nav-item">
+                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#dept-programs">Programs</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#dept-staff">Staff Members</button>
+                        </li>
+                         <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#dept-overview">Overview</button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content pt-3">
+
+                        <!-- Programs Tab -->
+                         <div class="tab-pane fade show active" id="dept-programs">
+                            <h5 class="card-title">Programs Offered</h5>
+                             {% if programs %}
+                                <div class="accordion" id="programsAccordion">
+                                    {% for program in programs %}
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="heading{{ forloop.counter }}">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ forloop.counter }}" aria-expanded="false" aria-controls="collapse{{ forloop.counter }}">
+                                            {{ program.name }} ({{ program.duration_years }} Years) - {{ program.student_count }} Students
+                                        </button>
+                                        </h2>
+                                        <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse" aria-labelledby="heading{{ forloop.counter }}" data-bs-parent="#programsAccordion">
+                                        <div class="accordion-body small">
+                                            {{ program.description|default:"No description available." }}
+                                            <a href="{% url 'academics:program_detail' program.id %}" class="btn btn-link btn-sm p-0 ms-2">View Details</a>
+                                        </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                             {% else %}
+                                <p class="text-muted">No programs found for this department.</p>
+                             {% endif %}
+                              <a href="{% url 'academics:program_create' %}?department={{ department.id }}" class="btn btn-primary btn-sm mt-3"><i class="bi bi-plus-lg"></i> Add Program</a>
+                        </div>
+
+                         <!-- Staff Tab -->
+                        <div class="tab-pane fade" id="dept-staff">
+                             <h5 class="card-title">Staff Members (Recent 10)</h5>
+                              {% if staff_members %}
+                                <div class="table-responsive">
+                                <table class="table table-sm table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Staff ID</th>
+                                            <th>Name</th>
+                                            <th>Designation</th>
+                                            <th>Email</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for staff in staff_members %}
+                                        <tr>
+                                            <td>{{ staff.staff_id }}</td>
+                                            <td>{{ staff.user.get_full_name }}</td>
+                                            <td>{{ staff.designation }}</td>
+                                            <td>{{ staff.user.email }}</td>
+                                             <td><a href="{% url 'accounts:staff_detail' staff.id %}" class="btn btn-info btn-sm"><i class="bi bi-eye"></i></a></td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                                </div>
+                                <a href="{% url 'accounts:staff_list' %}?department={{ department.id }}" class="btn btn-link btn-sm">View All Staff</a>
+                              {% else %}
+                                <p class="text-muted">No staff members found in this department.</p>
+                              {% endif %}
+                               <a href="{% url 'accounts:staff_create' %}?department={{ department.id }}" class="btn btn-primary btn-sm mt-3"><i class="bi bi-plus-lg"></i> Add Staff</a>
+                        </div>
+
+                        <!-- Overview Tab -->
+                        <div class="tab-pane fade" id="dept-overview">
+                            <h5 class="card-title">Department Overview</h5>
+                             <p>{{ department.description|default:"No description provided."|linebreaksbr }}</p>
+
+                             <h5 class="card-title">Total Courses</h5>
+                             <p>{{ total_courses|intcomma }} courses are associated with this department.</p>
+                             <a href="{% url 'courses:course_list' %}?department={{ department.id }}" class="btn btn-link btn-sm">View Courses</a>
+                        </div>
+
+                    </div><!-- End Bordered Tabs -->
+
+                     <div class="mt-4 pt-3 border-top d-flex justify-content-end">
+                         <a href="{% url 'academics:department_edit' department.id %}" class="btn btn-warning me-2"><i class="bi bi-pencil-square"></i> Edit Department</a>
+                         <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteDeptDetailModal">
+                             <i class="bi bi-trash"></i> Delete Department
+                         </button>
+                     </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteDeptDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h5 class="modal-title">Confirm Deletion</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+            Are you sure you want to delete the department <strong>{{ department.name }} ({{ department.code }})</strong>?
+            <br><small class="text-danger">This action cannot be undone. Ensure there are no students, staff, programs, or courses linked to this department.</small>
+            </div>
+            <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <form action="{% url 'academics:department_delete' department.id %}" method="post" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Delete Department</button>
+            </form>
+            </div>
+        </div>
+    </div>
+</div><!-- End Delete Modal -->
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends 'base/base_admin.html' %}
+{% load static %}
+
+{% block title %}Upload Admitted Students | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Upload Admitted Students</h1>
+    {% include 'components/breadcrumb.html' %}
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Upload List via Excel</h5>
+
+                    {% include 'components/alerts.html' %}
+
+                    <!-- Instructions -->
+                    <div class="alert alert-info small" role="alert">
+                         <h6 class="alert-heading">Instructions</h6>
+                         <p>Please prepare an Excel file (.xlsx) with the following columns (case-sensitive headers):</p>
+                         <ul>
+                             <li><strong>JAMB_No</strong> (Required, Unique)</li>
+                             <li><strong>First_Name</strong> (Required)</li>
+                             <li><strong>Last_Name</strong> (Required)</li>
+                             <li><strong>Email</strong> (Required)</li>
+                             <li><strong>Phone</strong> (Required)</li>
+                             <li><strong>Department</strong> (Required - Use Department Code e.g., CSC, MTH)</li>
+                             <li><strong>Program</strong> (Required - Use Full Program Name e.g., NCE Computer Science)</li>
+                             <li><strong>Course_Codes</strong> (Required - Comma-separated course codes for admission offer)</li>
+                         </ul>
+                         <p>Each row represents one student. The system will generate a unique Admission PIN and send an email to the student upon successful upload.</p>
+                         {# Add link to download sample template if available #}
+                         {# <p><a href="#">Download Sample Template</a></p> #}
+                    </div>
+
+                    <!-- Upload Form -->
+                    <form method="POST" action="{% url 'admissions:upload_admitted' %}" enctype="multipart/form-data" class="row g-3 needs-validation" id="uploadForm" novalidate>
+                        {% csrf_token %}
+
+                        {{ form.errors }}
+
+                        <div class="col-md-6">
+                            <label for="{{ form.session.id_for_label }}" class="form-label">{{ form.session.label }} <span class="text-danger">*</span></label>
+                            {{ form.session }}
+                             <div class="invalid-feedback">{{ form.session.errors|first }}</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="{{ form.excel_file.id_for_label }}" class="form-label">{{ form.excel_file.label }} <span class="text-danger">*</span></label>
+                            {{ form.excel_file }}
+                             <div class="invalid-feedback">{{ form.excel_file.errors|first }}</div>
+                        </div>
+
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-success" id="uploadButton">
+                                <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true" id="uploadSpinner"></span>
+                                <i class="bi bi-cloud-upload me-1"></i> Upload and Process File
+                            </button>
+                            <a href="{% url 'admissions:admitted_list' %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form><!-- End Upload Form -->
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+  'use strict'
+  var forms = document.querySelectorAll('.needs-validation')
+  Array.prototype.slice.call(forms)
+    .forEach(function (form) {
+      form.addEventListener('submit', function (event) {
+        if (!form.checkValidity()) {
+          event.preventDefault()
+          event.stopPropagation()
+        } else {
+            // Show spinner on valid submission
+            const button = document.getElementById('uploadButton');
+            const spinner = document.getElementById('uploadSpinner');
+            if (button && spinner) {
+                 button.disabled = true;
+                 spinner.classList.remove('d-none');
+                 button.querySelector('i').classList.add('d-none'); // Hide icon
+            }
+        }
+        form.classList.add('was-validated')
+      }, false)
+    })
+})();
+</script>
+{% endblock %}

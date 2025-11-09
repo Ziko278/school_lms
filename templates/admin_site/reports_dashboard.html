@@ -1,0 +1,77 @@
+{% extends 'base/base_admin.html' %}
+{% load static %}
+
+{% block title %}Reports Dashboard | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Reports Dashboard</h1>
+    {% include 'components/breadcrumb.html' %}
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row">
+        <div class="col-12">
+            <p>Select a report to generate and view system data.</p>
+        </div>
+
+        <!-- Report Card: Enrollment -->
+        <div class="col-lg-4 col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-people-fill me-2 text-primary"></i>Student Enrollment</h5>
+                    <p class="card-text small">Analyze student demographics, distribution across departments, levels, and admission status.</p>
+                    <a href="{% url 'admin_site:enrollment_report' %}" class="btn btn-primary btn-sm float-end">Generate Report</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Report Card: Payments -->
+        <div class="col-lg-4 col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-cash-stack me-2 text-success"></i>Payment Report</h5>
+                    <p class="card-text small">Track financial transactions, revenue summaries, payment statuses, and filter by type or date.</p>
+                     <a href="{% url 'admin_site:payment_report' %}" class="btn btn-success btn-sm float-end">Generate Report</a>
+                </div>
+            </div>
+        </div>
+
+         <!-- Report Card: Result Statistics -->
+        <div class="col-lg-4 col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-clipboard-data me-2 text-info"></i>Result Statistics</h5>
+                    <p class="card-text small">View overall academic performance, grade distributions, pass/fail rates, and department comparisons.</p>
+                     <a href="{% url 'admin_site:result_statistics' %}" class="btn btn-info btn-sm float-end">Generate Report</a>
+                </div>
+            </div>
+        </div>
+
+         <!-- Report Card: Attendance -->
+        <div class="col-lg-4 col-md-6 mt-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-calendar-check me-2 text-warning"></i>Attendance Report</h5>
+                    <p class="card-text small">Generate detailed attendance summaries for specific courses, sessions, or lecturers.</p>
+                    <a href="#" class="btn btn-warning btn-sm float-end disabled">Generate Report (Staff)</a> {# Link to staff report generation page #}
+                </div>
+            </div>
+        </div>
+
+         <!-- Report Card: Course Registration -->
+        <div class="col-lg-4 col-md-6 mt-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-journal-check me-2 text-secondary"></i>Course Registration Report</h5>
+                    <p class="card-text small">Analyze course registration trends, student counts per course, and approval statuses.</p>
+                     <a href="#" class="btn btn-secondary btn-sm float-end disabled">Generate Report (TBD)</a> {# Link to course reg report page #}
+                </div>
+            </div>
+        </div>
+
+         {# Add more report cards as needed #}
+
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,138 @@
+{% load static %}
+
+<!-- Determine Navbar Style based on 'nav_type' passed from base template -->
+{% if nav_type == 'public' %}
+<!-- ========================= Public Website Navbar (Tailwind) ========================= -->
+<nav x-data="{ open: false }" class="bg-primary shadow-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+            <div class="flex items-center">
+                <a href="{% url 'website:home' %}" class="flex-shrink-0 flex items-center">
+                    {% if school_info.school_logo %}
+                        <img class="h-10 w-auto" src="{{ school_info.school_logo.url }}" alt="{{ school_info.school_name }}">
+                    {% endif %}
+                    <span class="text-white text-xl font-bold ml-3">{{ school_info.school_name }}</span>
+                </a>
+            </div>
+            <div class="hidden md:block">
+                <div class="ml-10 flex items-baseline space-x-4">
+                    <a href="{% url 'website:home' %}" class="text-gray-300 hover:bg-primary-dark hover:text-white px-3 py-2 rounded-md text-sm font-medium">Home</a>
+                    <a href="{% url 'website:about' %}" class="text-gray-300 hover:bg-primary-dark hover:text-white px-3 py-2 rounded-md text-sm font-medium">About</a>
+                    <a href="{% url 'website:departments' %}" class="text-gray-300 hover:bg-primary-dark hover:text-white px-3 py-2 rounded-md text-sm font-medium">Departments</a>
+                    <a href="{% url 'website:programs' %}" class="text-gray-300 hover:bg-primary-dark hover:text-white px-3 py-2 rounded-md text-sm font-medium">Programs</a>
+                    <a href="{% url 'website:admission_portal' %}" class="text-gray-300 hover:bg-primary-dark hover:text-white px-3 py-2 rounded-md text-sm font-medium">Admission</a>
+                    <a href="{% url 'website:contact' %}" class="text-gray-300 hover:bg-primary-dark hover:text-white px-3 py-2 rounded-md text-sm font-medium">Contact</a>
+                    <a href="{% url 'accounts:login' %}" class="bg-secondary hover:bg-secondary-dark text-white px-3 py-2 rounded-md text-sm font-medium ml-4">Portal Login</a>
+                </div>
+            </div>
+            <div class="-mr-2 flex md:hidden">
+                <!-- Mobile menu button -->
+                <button @click="open = !open" type="button" class="bg-primary inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-primary focus:ring-white" aria-controls="mobile-menu" aria-expanded="false">
+                    <span class="sr-only">Open main menu</span>
+                    <svg :class="{'hidden': open, 'block': !open }" class="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                    <svg :class="{'block': open, 'hidden': !open }" class="hidden h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile menu, show/hide based on menu state. -->
+    <div x-show="open" class="md:hidden" id="mobile-menu">
+        <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+            <a href="{% url 'website:home' %}" class="text-gray-300 hover:bg-primary-dark hover:text-white block px-3 py-2 rounded-md text-base font-medium">Home</a>
+            <a href="{% url 'website:about' %}" class="text-gray-300 hover:bg-primary-dark hover:text-white block px-3 py-2 rounded-md text-base font-medium">About</a>
+            <a href="{% url 'website:departments' %}" class="text-gray-300 hover:bg-primary-dark hover:text-white block px-3 py-2 rounded-md text-base font-medium">Departments</a>
+            <a href="{% url 'website:programs' %}" class="text-gray-300 hover:bg-primary-dark hover:text-white block px-3 py-2 rounded-md text-base font-medium">Programs</a>
+            <a href="{% url 'website:admission_portal' %}" class="text-gray-300 hover:bg-primary-dark hover:text-white block px-3 py-2 rounded-md text-base font-medium">Admission</a>
+            <a href="{% url 'website:contact' %}" class="text-gray-300 hover:bg-primary-dark hover:text-white block px-3 py-2 rounded-md text-base font-medium">Contact</a>
+            <a href="{% url 'accounts:login' %}" class="bg-secondary hover:bg-secondary-dark text-white block px-3 py-2 rounded-md text-base font-medium mt-2">Portal Login</a>
+        </div>
+    </div>
+</nav>
+
+{% else %}
+<!-- ========================= Portal Navbar (Admin/Staff/Student - Bootstrap) ========================= -->
+<header id="header" class="header non-printable fixed-top d-flex align-items-center">
+
+    <div class="d-flex align-items-center justify-content-between">
+        <a href="{% url 'accounts:dashboard' %}" class="logo d-flex align-items-center">
+            {% if school_info.school_logo %}
+                <img src="{{ school_info.school_logo.url }}" alt="" style="max-height: 40px;">
+            {% endif %}
+            <span class="d-none d-lg-block">{{ school_info.school_name|default:"College Portal" }}</span>
+        </a>
+        <i class="bi bi-list toggle-sidebar-btn"></i>
+    </div><!-- End Logo -->
+
+    <nav class="header-nav ms-auto">
+        <ul class="d-flex align-items-center">
+
+            <!-- Notifications Nav (Placeholder) -->
+            <li class="nav-item dropdown">
+                <a class="nav-link nav-icon" href="#" data-bs-toggle="dropdown">
+                    <i class="bi bi-bell"></i>
+                    <span class="badge bg-primary badge-number">0</span> <!-- Placeholder count -->
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow notifications">
+                    <li class="dropdown-header">
+                        You have 0 new notifications
+                    </li>
+                    <!-- Notification items go here -->
+                </ul>
+            </li><!-- End Notification Nav -->
+
+            <!-- User Profile Nav -->
+            <li class="nav-item dropdown pe-3">
+                <a class="nav-link nav-profile d-flex align-items-center pe-0" href="#" data-bs-toggle="dropdown">
+                    {% if user.profile.profile_picture %}
+                        <img src="{{ user.profile.profile_picture.url }}" alt="Profile" class="rounded-circle" style="width: 36px; height: 36px; object-fit: cover;">
+                    {% else %}
+                        <img src="https://placehold.co/36x36/607d8b/FFFFFF?text={{ user.username.0|upper }}" alt="Profile" class="rounded-circle">
+                    {% endif %}
+                    <span class="d-none d-md-block dropdown-toggle ps-2">{{ user.get_full_name|default:user.username }}</span>
+                </a>
+
+                <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow profile profile-dropdown">
+                    <li class="dropdown-header">
+                        <h6>{{ user.get_full_name|default:user.username }}</h6>
+                        <span>
+                            {% if user.is_superuser %} Super Admin
+                            {% elif user.profile.user_type == 'admin' %} Admin
+                            {% elif user.profile.user_type == 'staff' %} Staff
+                            {% elif user.profile.user_type == 'student' %} Student
+                            {% endif %}
+                        </span>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center" href="{% url 'accounts:profile' %}">
+                            <i class="bi bi-person"></i>
+                            <span>My Profile</span>
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center" href="{% url 'accounts:change_password' %}">
+                            <i class="bi bi-gear"></i>
+                            <span>Change Password</span>
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center" href="{% url 'accounts:logout' %}">
+                            <i class="bi bi-box-arrow-right"></i>
+                            <span>Sign Out</span>
+                        </a>
+                    </li>
+                </ul><!-- End Profile Dropdown Items -->
+            </li><!-- End Profile Nav -->
+
+        </ul>
+    </nav><!-- End Icons Navigation -->
+
+</header>
+{% endif %}

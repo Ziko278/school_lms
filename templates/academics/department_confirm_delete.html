@@ -1,0 +1,45 @@
+{% extends 'base/base_admin.html' %}
+{% load static %}
+
+{% block title %}Delete Department | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Delete Department</h1>
+    {% include 'components/breadcrumb.html' %}
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+
+            <div class="card border-danger">
+                <div class="card-body">
+                    <h5 class="card-title text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Confirm Deletion</h5>
+
+                    {% include 'components/alerts.html' %} {# Display error if deletion is not allowed #}
+
+                    <p>Are you sure you want to delete the department:</p>
+                    <h4 class="text-center mb-3"><strong>{{ department.name }} ({{ department.code }})</strong></h4>
+                     <p class="small text-muted text-center">HOD: {% if department.hod %}{{ department.hod.user.get_full_name }}{% else %}N/A{% endif %}</p>
+
+                    <div class="alert alert-danger" role="alert">
+                        <strong>Warning!</strong> This action cannot be undone. Deleting a department might affect historical records and associated students, staff, programs, and courses. Ensure no critical data depends solely on this department before proceeding.
+                    </div>
+
+                     {# You could add a list of dependencies here if needed, passed from the view #}
+                     {# e.g., <p>Students: {{ department.student_count }}</p> #}
+
+                    <form method="POST" action="{% url 'academics:department_delete' department.id %}" class="text-center mt-4">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i> Yes, Delete Department</button>
+                        <a href="{% url 'academics:department_list' %}" class="btn btn-secondary">Cancel</a>
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}

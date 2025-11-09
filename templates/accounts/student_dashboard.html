@@ -1,0 +1,227 @@
+{% extends 'base/base_admin.html' %} {# Assuming student uses the admin base layout #}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Student Dashboard | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Student Dashboard</h1>
+    {% include 'components/breadcrumb.html' %}
+</div><!-- End Page Title -->
+
+<section class="section dashboard">
+    <div class="row">
+
+        <!-- Left side columns -->
+        <div class="col-lg-12">
+            <div class="row">
+
+                <!-- Welcome Message -->
+                 <div class="col-12 mb-4">
+                     <h4>Welcome, {{ request.user.get_full_name|default:request.user.username }}!</h4>
+                     <p class="text-muted small">Matric No: {{ student.matric_number }} | {{ student.program.name }} - {{ student.current_level.name }}</p>
+                     <p class="text-muted small">Current Session: {{ current_session|default:"Not Set" }} | Current Semester: {{ current_semester|default:"Not Set" }}</p>
+                 </div>
+
+                <!-- Statistics Cards -->
+                <div class="col-xxl-3 col-md-6">
+                    <div class="card info-card sales-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Registered Courses <span>| This Semester</span></h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-journal-check"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6>{{ total_courses|default:"0" }}</h6>
+                                    <span class="text-muted small pt-2 ps-1">courses</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- End Card -->
+
+                <div class="col-xxl-3 col-md-6">
+                    <div class="card info-card revenue-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Current GPA <span>| This Semester</span></h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-graph-up"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6>{{ current_gpa|floatformat:2|default:"N/A" }}</h6>
+                                    {# Add comparison logic if needed #}
+                                    {# <span class="text-success small pt-1 fw-bold">8%</span> <span class="text-muted small pt-2 ps-1">increase</span> #}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- End Card -->
+
+                <div class="col-xxl-3 col-md-6">
+                    <div class="card info-card customers-card">
+                        <div class="card-body">
+                            <h5 class="card-title">CGPA <span>| Cumulative</span></h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-bar-chart-line-fill"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6>{{ cgpa|floatformat:2|default:"N/A" }}</h6>
+                                     {# <span class="text-danger small pt-1 fw-bold">12%</span> <span class="text-muted small pt-2 ps-1">decrease</span> #}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- End Card -->
+
+                 <div class="col-xxl-3 col-md-6">
+                    <div class="card info-card"> <!-- Default Style -->
+                        <div class="card-body">
+                            <h5 class="card-title">Attendance <span>| Overall %</span></h5>
+                             <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center {% if attendance_percentage < 75 %} bg-danger text-white {% else %} bg-success text-white {% endif %}">
+                                    <i class="bi bi-calendar-check"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6>{{ attendance_percentage|floatformat:1|default:"0.0" }}%</h6>
+                                     <span class="text-muted small pt-2 ps-1">{{ present_classes }}/{{ total_classes }} classes attended</span>
+                                     {% if attendance_percentage < 75 %}
+                                        <br><span class="text-danger small pt-1 fw-bold">Below minimum requirement!</span>
+                                     {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- End Card -->
+
+
+                <!-- Pending Assignments -->
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Pending Assignments <span>| {{ total_pending_assignments }} Total</span></h5>
+                            <div class="list-group list-group-flush">
+                                {% for assignment in pending_assignments %}
+                                    <a href="{% url 'materials:student_assignment_submit' assignment.id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center {% if assignment.due_date < timezone.now %} list-group-item-danger {% endif %}">
+                                        <div>
+                                            <h6 class="mb-1">{{ assignment.title|truncatechars:40 }}</h6>
+                                            <small class="text-muted">{{ assignment.course_allocation.course.code }}</small>
+                                        </div>
+                                        <small {% if assignment.due_date < timezone.now %} class="text-danger fw-bold" {% endif %}>
+                                            Due: {{ assignment.due_date|date:"M d, Y P" }}
+                                            {% if assignment.due_date < timezone.now %} (Overdue) {% endif %}
+                                        </small>
+                                    </a>
+                                {% empty %}
+                                    <div class="list-group-item text-center text-muted">
+                                        No pending assignments. Great job!
+                                    </div>
+                                {% endfor %}
+                            </div>
+                             <div class="text-end mt-3">
+                                <a href="{% url 'materials:student_assignment_list' %}">View All Assignments &raquo;</a>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- End Pending Assignments -->
+
+                 <!-- Recent Results -->
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Recent Results <span>| Latest 5 Verified</span></h5>
+                             <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Course</th>
+                                        <th scope="col">Session</th>
+                                        <th scope="col">Total</th>
+                                        <th scope="col">Grade</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for result in latest_results %}
+                                    <tr>
+                                        <td>{{ result.course.code }}</td>
+                                        <td>{{ result.session.name }} ({{ result.semester.get_name_display|slice:":3" }})</td>
+                                        <td>{{ result.total_score|floatformat:1 }}</td>
+                                        <td><span class="badge {% if result.grade == 'A' %}bg-success{% elif result.grade == 'F' %}bg-danger{% else %}bg-primary{% endif %}">{{ result.grade }}</span></td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted">No results found yet.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                             <div class="text-end mt-2">
+                                <a href="{% url 'results:student_result' %}">View All Results &raquo;</a>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- End Recent Results -->
+
+                <!-- Quick Links -->
+                <div class="col-12">
+                     <div class="card">
+                         <div class="card-body">
+                             <h5 class="card-title">Quick Links</h5>
+                             <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 g-3">
+                                 <div class="col text-center">
+                                     <a href="{% url 'courses:student_register' %}" class="d-block p-3 border rounded shadow-sm hover-lift">
+                                         <i class="bi bi-journal-plus fs-2 text-primary"></i><br>Register Courses
+                                     </a>
+                                 </div>
+                                  <div class="col text-center">
+                                     <a href="{% url 'materials:student_material_list' %}" class="d-block p-3 border rounded shadow-sm hover-lift">
+                                         <i class="bi bi-book fs-2 text-success"></i><br>Course Materials
+                                     </a>
+                                 </div>
+                                  <div class="col text-center">
+                                     <a href="{% url 'materials:student_assignment_list' %}" class="d-block p-3 border rounded shadow-sm hover-lift">
+                                         <i class="bi bi-pencil-square fs-2 text-warning"></i><br>Assignments
+                                     </a>
+                                 </div>
+                                  <div class="col text-center">
+                                     <a href="{% url 'results:student_result' %}" class="d-block p-3 border rounded shadow-sm hover-lift">
+                                         <i class="bi bi-file-earmark-spreadsheet fs-2 text-info"></i><br>View Results
+                                     </a>
+                                 </div>
+                                  <div class="col text-center">
+                                     <a href="{% url 'attendance:student_attendance' %}" class="d-block p-3 border rounded shadow-sm hover-lift">
+                                         <i class="bi bi-calendar3-week fs-2 text-danger"></i><br>View Attendance
+                                     </a>
+                                 </div>
+                                  <div class="col text-center">
+                                     <a href="{% url 'accounts:profile' %}" class="d-block p-3 border rounded shadow-sm hover-lift">
+                                         <i class="bi bi-person-circle fs-2 text-secondary"></i><br>My Profile
+                                     </a>
+                                 </div>
+                                   <div class="col text-center">
+                                     <a href="{% url 'results:transcript_download' %}" class="d-block p-3 border rounded shadow-sm hover-lift">
+                                         <i class="bi bi-file-pdf fs-2 text-primary"></i><br>Download Transcript
+                                     </a>
+                                 </div>
+                             </div>
+                         </div>
+                     </div>
+                </div><!-- End Quick Links -->
+
+
+            </div>
+        </div><!-- End Left side columns -->
+
+    </div>
+</section>
+
+<style>
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        transition: transform 0.2s ease-in-out;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}

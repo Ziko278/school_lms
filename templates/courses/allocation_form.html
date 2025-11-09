@@ -1,0 +1,221 @@
+{% extends 'base/base_admin.html' %}
+{% load static %}
+
+{% block title %}Allocate Course | {{ school_info.school_name }}{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .form-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Allocate Course to Lecturer</h1>
+    {% include 'components/breadcrumb.html' %}
+</div>
+
+<section class="section">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Allocation Details</h5>
+
+                    {% include 'components/alerts.html' %}
+
+                    <form method="POST" action="{% url 'courses:allocation_create' %}" class="row g-3 needs-validation" id="allocationForm" novalidate>
+                        {% csrf_token %}
+
+                        <!-- Session -->
+                        <div class="col-md-12">
+                            <label for="id_session" class="form-label">Session <span class="text-danger">*</span></label>
+                            <select name="session" id="id_session" class="form-select" required>
+                                <option value="">-- Select Session --</option>
+                                {% for session in form.fields.session.queryset %}
+                                    <option value="{{ session.id }}" {% if form.session.value == session.id %}selected{% endif %}>
+                                        {{ session.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback">Please select a session.</div>
+                        </div>
+
+                        <!-- Semester -->
+                        <div class="col-md-12">
+                            <label for="id_semester" class="form-label">Semester <span class="text-danger">*</span></label>
+                            <select name="semester" id="id_semester" class="form-select" required>
+                                <option value="">-- Select Semester --</option>
+                                {% for semester in form.fields.semester.queryset %}
+                                    <option value="{{ semester.id }}"
+                                            data-session-id="{{ semester.session.id }}"
+                                            {% if form.semester.value == semester.id %}selected{% endif %}>
+                                        {{ semester.name }} ({{ semester.session.name }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback">Please select a semester.</div>
+                            <div class="form-text">Semesters will be filtered based on selected session.</div>
+                        </div>
+
+                        <!-- Department Filter (Optional) -->
+                        <div class="col-md-12">
+                            <label for="departmentFilter" class="form-label">Filter by Department (Optional)</label>
+                            <select id="departmentFilter" class="form-select">
+                                <option value="">-- All Departments --</option>
+                                {% for dept in departments %}
+                                    <option value="{{ dept.id }}">{{ dept.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Filter courses and lecturers by department.</div>
+                        </div>
+
+                        <!-- Course -->
+                        <div class="col-md-12">
+                            <label for="id_course" class="form-label">Course <span class="text-danger">*</span></label>
+                            <select name="course" id="id_course" class="form-select" required>
+                                <option value="">-- Select Course --</option>
+                                {% for course in form.fields.course.queryset %}
+                                    <option value="{{ course.id }}"
+                                            data-department-id="{{ course.department.id }}"
+                                            {% if form.course.value == course.id %}selected{% endif %}>
+                                        {{ course.code }} - {{ course.title }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback">Please select a course.</div>
+                        </div>
+
+                        <!-- Lecturer -->
+                        <div class="col-md-12">
+                            <label for="id_lecturer" class="form-label">Lecturer <span class="text-danger">*</span></label>
+                            <select name="lecturer" id="id_lecturer" class="form-select" required>
+                                <option value="">-- Select Lecturer --</option>
+                                {% for lecturer in form.fields.lecturer.queryset %}
+                                    <option value="{{ lecturer.id }}"
+                                            data-department-id="{{ lecturer.department.id }}"
+                                            {% if form.lecturer.value == lecturer.id %}selected{% endif %}>
+                                        {{ lecturer.user.get_full_name }} ({{ lecturer.staff_id }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback">Please select a lecturer.</div>
+                        </div>
+
+                        {% if form.non_field_errors %}
+                            <div class="col-12 text-danger small mt-2">
+                                {% for error in form.non_field_errors %}
+                                    <i class="bi bi-exclamation-triangle-fill"></i> {{ error }}<br>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Allocate Course
+                            </button>
+                            <a href="{% url 'courses:allocation_list' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    'use strict';
+
+    // Form validation
+    var forms = document.querySelectorAll('.needs-validation');
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+
+    // Get elements
+    const sessionSelect = document.getElementById('id_session');
+    const semesterSelect = document.getElementById('id_semester');
+    const departmentFilter = document.getElementById('departmentFilter');
+    const courseSelect = document.getElementById('id_course');
+    const lecturerSelect = document.getElementById('id_lecturer');
+
+    // Store original options
+    const originalSemesterOptions = Array.from(semesterSelect.options);
+    const originalCourseOptions = Array.from(courseSelect.options);
+    const originalLecturerOptions = Array.from(lecturerSelect.options);
+
+    // Filter semesters by selected session
+    function filterSemesters() {
+        const selectedSessionId = sessionSelect.value;
+
+        semesterSelect.innerHTML = '<option value="">-- Select Semester --</option>';
+
+        originalSemesterOptions.forEach(option => {
+            if (!option.value) return; // Skip empty option
+
+            const sessionId = option.getAttribute('data-session-id');
+            if (!selectedSessionId || sessionId === selectedSessionId) {
+                semesterSelect.appendChild(option.cloneNode(true));
+            }
+        });
+    }
+
+    // Filter courses by department
+    function filterCourses() {
+        const selectedDepartmentId = departmentFilter.value;
+
+        courseSelect.innerHTML = '<option value="">-- Select Course --</option>';
+
+        originalCourseOptions.forEach(option => {
+            if (!option.value) return; // Skip empty option
+
+            const departmentId = option.getAttribute('data-department-id');
+            if (!selectedDepartmentId || departmentId === selectedDepartmentId) {
+                courseSelect.appendChild(option.cloneNode(true));
+            }
+        });
+    }
+
+    // Filter lecturers by department
+    function filterLecturers() {
+        const selectedDepartmentId = departmentFilter.value;
+
+        lecturerSelect.innerHTML = '<option value="">-- Select Lecturer --</option>';
+
+        originalLecturerOptions.forEach(option => {
+            if (!option.value) return; // Skip empty option
+
+            const departmentId = option.getAttribute('data-department-id');
+            if (!selectedDepartmentId || departmentId === selectedDepartmentId) {
+                lecturerSelect.appendChild(option.cloneNode(true));
+            }
+        });
+    }
+
+    // Event listeners
+    sessionSelect.addEventListener('change', filterSemesters);
+    departmentFilter.addEventListener('change', function() {
+        filterCourses();
+        filterLecturers();
+    });
+
+    // Initial filter on page load
+    filterSemesters();
+})();
+</script>
+{% endblock %}

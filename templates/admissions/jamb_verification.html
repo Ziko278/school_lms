@@ -1,0 +1,185 @@
+{% extends 'base/base_public.html' %}
+{% load static %}
+
+{% block title %}Verify Admission | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<section class="py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full mx-auto space-y-8">
+    <!-- Logo and Title -->
+    <div class="text-center">
+      {% if school_info.logo %}
+        <img src="{{ school_info.logo.url }}" alt="{{ school_info.school_name }} Logo" class="mx-auto h-20 w-auto mb-4 rounded">
+      {% endif %}
+      <h2 class="text-2xl font-bold text-gray-900">Verify Admission</h2>
+      <p class="text-gray-600 text-sm mt-2">Enter your JAMB Registration Number and Admission PIN to verify your admission status.</p>
+    </div>
+
+    <!-- Form Card -->
+    <div class="bg-white shadow-md rounded-lg px-8 py-6">
+      <form id="verifyForm" method="POST">
+        {% csrf_token %}
+        <div class="space-y-4">
+          <!-- JAMB Number -->
+          <div>
+            <label for="jamb_number" class="block text-sm font-medium text-gray-700 mb-1">
+              JAMB Registration Number
+            </label>
+            <input
+              type="text"
+              name="jamb_number"
+              id="jamb_number"
+              placeholder="Enter your JAMB number"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2 border"
+              required
+            >
+          </div>
+
+          <!-- Admission PIN -->
+          <div>
+            <label for="admission_pin" class="block text-sm font-medium text-gray-700 mb-1">
+              Admission PIN
+            </label>
+            <input
+              type="text"
+              name="admission_pin"
+              id="admission_pin"
+              placeholder="Enter your admission PIN"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2 border"
+              required
+            >
+          </div>
+
+          <!-- Status Message -->
+          <div id="message" class="hidden text-sm mt-2"></div>
+
+          <!-- Success Details -->
+          <div id="successDetails" class="hidden bg-green-50 border border-green-200 rounded-md p-4 mt-4">
+            <div class="space-y-2 text-sm">
+              <p><span class="font-medium">Name:</span> <span id="studentName"></span></p>
+              <p><span class="font-medium">Email:</span> <span id="studentEmail"></span></p>
+              <p><span class="font-medium">Department:</span> <span id="studentDepartment"></span></p>
+              <p><span class="font-medium">Program:</span> <span id="studentProgram"></span></p>
+            </div>
+          </div>
+
+          <div id="paymentLinkContainer" class="hidden text-center mt-4">
+            <a href="{% url 'admissions:payment_initiation' %}"
+               class="w-full inline-flex justify-center bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-1">
+              Proceed to Payment
+            </a>
+          </div>
+
+          <!-- Loading Spinner -->
+          <div id="loading" class="hidden flex justify-center items-center mt-4">
+            <div class="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-indigo-500"></div>
+          </div>
+
+          <!-- Submit Button -->
+          <div>
+            <button
+              type="submit"
+              id="submitBtn"
+              class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1"
+            >
+              Verify Admission
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const form = document.getElementById("verifyForm");
+  const jambInput = document.getElementById("jamb_number");
+  const pinInput = document.getElementById("admission_pin");
+  const messageDiv = document.getElementById("message");
+  const loadingDiv = document.getElementById("loading");
+  const submitBtn = document.getElementById("submitBtn");
+  const successDetails = document.getElementById("successDetails");
+  const paymentLinkContainer = document.getElementById("paymentLinkContainer");
+
+  // Success detail elements
+  const studentName = document.getElementById("studentName");
+  const studentEmail = document.getElementById("studentEmail");
+  const studentDepartment = document.getElementById("studentDepartment");
+  const studentProgram = document.getElementById("studentProgram");
+
+  form.addEventListener("submit", async function(e) {
+    e.preventDefault();
+
+    const jambNumber = jambInput.value.trim();
+    const admissionPin = pinInput.value.trim();
+
+    if (!jambNumber || !admissionPin) {
+      showMessage("Please enter both JAMB number and Admission PIN.", "error");
+      return;
+    }
+
+    // Show loading, hide previous messages
+    loadingDiv.classList.remove("hidden");
+    messageDiv.classList.add("hidden");
+    successDetails.classList.add("hidden");
+    paymentLinkContainer.classList.add("hidden");
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Verifying...";
+
+    try {
+      const response = await fetch("{% url 'admissions:verify_admission' %}", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value,
+        },
+        body: JSON.stringify({
+          jamb_number: jambNumber,
+          admission_pin: admissionPin
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        showMessage("Admission verified successfully!", "success");
+
+        // Show success details
+      studentName.textContent = data.data.name || "N/A";
+      studentEmail.textContent = data.data.email || "N/A";
+      studentDepartment.textContent = data.data.department || "N/A";
+      studentProgram.textContent = data.data.program || "N/A";
+
+        successDetails.classList.remove("hidden");
+        paymentLinkContainer.classList.remove("hidden");
+      } else {
+        showMessage(data.message || "Invalid JAMB number or Admission PIN.", "error");
+        successDetails.classList.add("hidden");
+      }
+    } catch (error) {
+      console.error("Error verifying admission:", error);
+      showMessage("An error occurred. Please try again later.", "error");
+      successDetails.classList.add("hidden");
+    } finally {
+      loadingDiv.classList.add("hidden");
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Verify Admission";
+    }
+  });
+
+  function showMessage(text, type) {
+    messageDiv.textContent = text;
+    messageDiv.classList.remove("hidden", "text-green-600", "text-red-600", "text-blue-600");
+
+    if (type === "success") {
+      messageDiv.classList.add("text-green-600");
+    } else if (type === "error") {
+      messageDiv.classList.add("text-red-600");
+    } else {
+      messageDiv.classList.add("text-blue-600");
+    }
+  }
+});
+</script>
+{% endblock %}

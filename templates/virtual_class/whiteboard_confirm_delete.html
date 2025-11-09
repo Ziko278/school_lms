@@ -1,0 +1,52 @@
+{% extends 'base/base_staff.html' %}
+{% load static %}
+
+{% block title %}Confirm Delete Whiteboard | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Confirm Whiteboard Deletion</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'virtual_class:whiteboard_list' %}">Saved Whiteboards</a></li>
+            <li class="breadcrumb-item active">Confirm Delete</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card border-danger">
+                <div class="card-body">
+                    <h5 class="card-title text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Confirm Deletion</h5>
+
+                    <p>Are you sure you want to permanently delete the whiteboard titled:</p>
+                    <h4 class="text-center my-3">"{{ whiteboard.title }}"</h4>
+                    <p class="text-muted small">
+                        Course: {{ whiteboard.course_allocation.course.code }}<br>
+                        Last Updated: {{ whiteboard.updated_at|date:"M d, Y, H:i" }}
+                    </p>
+
+                    <p class="text-danger fw-bold">This action cannot be undone.</p>
+
+                    <form method="POST" action="{% url 'virtual_class:whiteboard_delete' whiteboard.id %}">
+                        {% csrf_token %}
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-1"></i> Yes, Delete Whiteboard
+                            </button>
+                            <a href="{% url 'virtual_class:whiteboard_list' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle me-1"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+

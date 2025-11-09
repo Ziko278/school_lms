@@ -1,0 +1,156 @@
+{% extends 'base/base_staff.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Edit Result | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Edit Result</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'results:result_entry_list' %}">Result Entry</a></li>
+            {# Link back to the specific course entry page if possible #}
+            <li class="breadcrumb-item"><a href="{% url 'results:result_entry' result.course_allocation.id %}">{{ result.course.code }}</a></li>
+            <li class="breadcrumb-item active">Edit Result</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Edit Result for {{ result.student.user.get_full_name }} ({{ result.student.matric_number }})</h5>
+                     <p>Course: {{ result.course.code }} - {{ result.course.title }} | Session: {{ result.session.name }}</p>
+
+                    {% include 'components/alerts.html' %}
+
+                    {% if result.status == 'rejected' %}
+                        <div class="alert alert-danger" role="alert">
+                            <h6 class="alert-heading">Result Rejected</h6>
+                            <p>This result was rejected. Please review the scores and remarks, make corrections, and re-save. You will need to submit the results for this course again after correcting all rejected entries.</p>
+                            {% if result.remarks and 'REJECTED:' in result.remarks %}
+                                <hr>
+                                <p class="mb-0"><strong>Reason/Comment from Verifier:</strong> {{ result.remarks|split:"REJECTED:"|last|split:"\n"|first|default:"N/A" }}</p>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    <!-- Edit Form -->
+                    <form method="POST" action="" class="row g-3 needs-validation" novalidate>
+                        {% csrf_token %}
+
+                         <div class="col-md-6">
+                            <label for="{{ form.ca_score.id_for_label }}" class="form-label">{{ form.ca_score.label }} (Max 40) <span class="text-danger">*</span></label>
+                            {% render_field form.ca_score class="form-control score-input" required=True type="number" step="0.01" min="0" max="40" %}
+                            <div class="invalid-feedback">{{ form.ca_score.errors|first|default:"Please enter a valid CA score (0-40)." }}</div>
+                        </div>
+
+                         <div class="col-md-6">
+                            <label for="{{ form.exam_score.id_for_label }}" class="form-label">{{ form.exam_score.label }} (Max 60) <span class="text-danger">*</span></label>
+                            {% render_field form.exam_score class="form-control score-input" required=True type="number" step="0.01" min="0" max="60" %}
+                            <div class="invalid-feedback">{{ form.exam_score.errors|first|default:"Please enter a valid Exam score (0-60)." }}</div>
+                        </div>
+
+                        <div class="col-md-6">
+                             <label class="form-label">Total Score</label>
+                             <input type="text" class="form-control" id="totalScoreDisplay" value="{{ result.total_score|default:'' }}" readonly disabled>
+                        </div>
+
+                        <div class="col-md-6">
+                             <label class="form-label">Grade</label>
+                             <input type="text" class="form-control" id="gradeDisplay" value="{{ result.grade|default:'' }}" readonly disabled>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="{{ form.remarks.id_for_label }}" class="form-label">{{ form.remarks.label }}</label>
+                            {% render_field form.remarks class="form-control" rows="3" placeholder="Optional remarks..." %}
+                            <div class="invalid-feedback">{{ form.remarks.errors|first }}</div>
+                        </div>
+
+
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i> Update Result</button>
+                            {# Redirect back to the entry page for that allocation #}
+                            <a href="{% url 'results:result_entry' result.course_allocation.id %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form><!-- End Edit Form -->
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+  'use strict';
+  // Standard Bootstrap validation setup
+  var forms = document.querySelectorAll('.needs-validation');
+  Array.prototype.slice.call(forms).forEach(function (form) {
+    form.addEventListener('submit', function (event) {
+      if (!form.checkValidity()) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      form.classList.add('was-validated');
+    }, false);
+  });
+
+   // Function to calculate and update total/grade
+   function updateCalculations() {
+      const caInput = document.getElementById('{{ form.ca_score.id_for_label }}');
+      const examInput = document.getElementById('{{ form.exam_score.id_for_label }}');
+      const totalDisplay = document.getElementById('totalScoreDisplay');
+      const gradeDisplay = document.getElementById('gradeDisplay');
+
+      const caScore = parseFloat(caInput.value);
+      const examScore = parseFloat(examInput.value);
+
+      if (!isNaN(caScore) && !isNaN(examScore) && caScore >= 0 && caScore <= 40 && examScore >= 0 && examScore <= 60) {
+          const total = caScore + examScore;
+          totalDisplay.value = total.toFixed(1);
+
+          let grade = 'F';
+          if (total >= 70) grade = 'A';
+          else if (total >= 60) grade = 'B';
+          else if (total >= 50) grade = 'C';
+          else if (total >= 45) grade = 'D';
+          else if (total >= 40) grade = 'E';
+          gradeDisplay.value = grade;
+          // Input validation state
+          caInput.classList.remove('is-invalid');
+          examInput.classList.remove('is-invalid');
+      } else {
+          totalDisplay.value = '-';
+          gradeDisplay.value = '-';
+          // Input validation state
+           if (isNaN(caScore) || caScore < 0 || caScore > 40) caInput.classList.add('is-invalid'); else caInput.classList.remove('is-invalid');
+           if (isNaN(examScore) || examScore < 0 || examScore > 60) examInput.classList.add('is-invalid'); else examInput.classList.remove('is-invalid');
+      }
+  }
+
+   // Add event listeners for auto-calculation
+   const scoreInputs = document.querySelectorAll('.score-input');
+   scoreInputs.forEach(input => {
+       input.addEventListener('input', updateCalculations);
+   });
+
+   // Initial calculation on page load
+   updateCalculations();
+
+})();
+</script>
+<style>
+/* Style rejected alert */
+.alert-danger hr {
+    border-top: 1px solid rgba(136, 41, 49, 0.3);
+}
+</style>
+{% endblock %}

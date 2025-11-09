@@ -1,0 +1,139 @@
+{% extends 'base/base_admin.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Courses | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Courses</h1>
+    {% include 'components/breadcrumb.html' %}
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-12">
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">Manage Courses</h5>
+                         <a href="{% url 'courses:course_create' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i> Add Course</a>
+                    </div>
+
+                    {% include 'components/alerts.html' %}
+
+                    <!-- Filter & Search Form -->
+                    <form method="get" class="row g-3 mb-4 align-items-end">
+                        <div class="col-md-3">
+                            <label for="department" class="form-label form-label-sm">Department</label>
+                            <select id="department" name="department" class="form-select form-select-sm">
+                                <option value="">All</option>
+                                {% for dept in departments %}
+                                <option value="{{ dept.id }}" {% if dept.id|stringformat:"s" == selected_department %}selected{% endif %}>{{ dept.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="level" class="form-label form-label-sm">Level</label>
+                            <select id="level" name="level" class="form-select form-select-sm">
+                                <option value="">All</option>
+                                {% for lvl in levels %}
+                                <option value="{{ lvl.id }}" {% if lvl.id|stringformat:"s" == selected_level %}selected{% endif %}>{{ lvl.name }} ({{ lvl.program.department.code }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                         <div class="col-md-2">
+                            <label for="semester" class="form-label form-label-sm">Semester</label>
+                            <select id="semester" name="semester" class="form-select form-select-sm">
+                                <option value="">All</option>
+                                {% for value, display in semester_choices %}
+                                <option value="{{ value }}" {% if value == selected_semester %}selected{% endif %}>{{ display }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                             <label for="search" class="form-label form-label-sm visually-hidden">Search</label>
+                            <input type="text" id="search" class="form-control form-control-sm" name="search" placeholder="Search code or title..." value="{{ search_query|default:'' }}">
+                        </div>
+                        <div class="col-md-1">
+                            <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-search"></i></button>
+                        </div>
+                    </form>
+
+                    <!-- Courses Table -->
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover datatable-custom"> {# Use custom class if datatable needs specific init #}
+                            <thead>
+                                <tr>
+                                    <th scope="col">Code</th>
+                                    <th scope="col">Title</th>
+                                    <th scope="col">Units</th>
+                                    <th scope="col">Dept.</th>
+                                    <th scope="col">Level</th>
+                                    <th scope="col">Semester</th>
+                                    <th scope="col">Type</th>
+                                    <th scope="col">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for course_obj in courses_page %}
+                                <tr>
+                                    <td><strong>{{ course_obj.code }}</strong></td>
+                                    <td>{{ course_obj.title }}</td>
+                                    <td>{{ course_obj.credit_units }}</td>
+                                    <td>{{ course_obj.department.code }}</td>
+                                    <td>{{ course_obj.level.name }}</td>
+                                    <td>{{ course_obj.get_semester_offered_display }}</td>
+                                    <td>{% if course_obj.is_elective %}<span class="badge bg-info">Elective</span>{% else %}<span class="badge bg-secondary">Core</span>{% endif %}</td>
+                                    <td>
+                                        <a href="{% url 'courses:course_detail' course_obj.id %}" class="btn btn-info btn-sm" title="View Details"><i class="bi bi-eye"></i></a>
+                                        <a href="{% url 'courses:course_edit' course_obj.id %}" class="btn btn-warning btn-sm" title="Edit Course"><i class="bi bi-pencil-square"></i></a>
+                                         <button type="button" class="btn btn-danger btn-sm" title="Delete Course" data-bs-toggle="modal" data-bs-target="#deleteCourseModal{{ course_obj.id }}">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+
+                                 <!-- Delete Confirmation Modal -->
+                                <div class="modal fade" id="deleteCourseModal{{ course_obj.id }}" tabindex="-1">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                            <h5 class="modal-title">Confirm Deletion</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                            Are you sure you want to delete the course <strong>{{ course_obj.code }} - {{ course_obj.title }}</strong>?
+                                            <br><small class="text-danger">This action cannot be undone. Ensure there are no student registrations or allocations linked to this course.</small>
+                                            </div>
+                                            <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            <form action="{% url 'courses:course_delete' course_obj.id %}" method="post" class="d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-danger">Delete Course</button>
+                                            </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div><!-- End Delete Modal -->
+
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted">No courses found{% if selected_department or selected_level or selected_semester or search_query %} matching your criteria{% endif %}. <a href="{% url 'courses:course_create' %}">Add one now</a>.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- End Courses Table -->
+
+                     {% include 'components/pagination.html' with page_obj=courses_page %}
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}

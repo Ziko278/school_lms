@@ -1,0 +1,256 @@
+{% extends 'base/base_student.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Academic Transcript | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle non-printable">
+    <h1>Academic Transcript</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item active">Transcript</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<section class="section printable-section profile">
+    <div class="row">
+        <div class="col-xl-12">
+
+            <div class="card">
+                 <div class="card-header bg-light d-flex justify-content-between align-items-center non-printable">
+                    <span>View Transcript</span>
+                    <div>
+                         <a href="{% url 'results:transcript_download' %}" class="btn btn-secondary btn-sm" title="Download Full Transcript PDF">
+                            <i class="bi bi-file-earmark-pdf me-1"></i> Download PDF
+                        </a>
+                        <button onclick="window.print()" class="btn btn-info btn-sm text-white"><i class="bi bi-printer me-1"></i> Print Transcript</button>
+                    </div>
+                 </div>
+                <div class="card-body pt-3">
+                    <!-- Transcript Header - Visible on Print -->
+                    <div class="text-center mt-4 mb-4 printable-only">
+                         <h4>{{ school_info.school_name|upper }}</h4>
+                         <h6>OFFICIAL ACADEMIC TRANSCRIPT</h6>
+                         <hr>
+                    </div>
+
+                    <!-- Student Profile Section -->
+                    <div class="row mb-4">
+                        <div class="col-lg-3 col-md-4 label fw-bold">Full Name:</div>
+                        <div class="col-lg-9 col-md-8">{{ student.user.get_full_name }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-lg-3 col-md-4 label fw-bold">Matric Number:</div>
+                        <div class="col-lg-9 col-md-8">{{ student.matric_number }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-lg-3 col-md-4 label fw-bold">Department:</div>
+                        <div class="col-lg-9 col-md-8">{{ student.department.name }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-lg-3 col-md-4 label fw-bold">Program:</div>
+                        <div class="col-lg-9 col-md-8">{{ student.program.name }}</div>
+                    </div>
+                     <div class="row mb-4">
+                        <div class="col-lg-3 col-md-4 label fw-bold">Admission Session:</div>
+                        <div class="col-lg-9 col-md-8">{{ student.admission_session.name }}</div>
+                    </div>
+                     {# Add Date Printed for print view #}
+                     <div class="row mb-4 printable-only">
+                        <div class="col-lg-3 col-md-4 label fw-bold">Date Printed:</div>
+                        <div class="col-lg-9 col-md-8">{% now "M d, Y" %}</div>
+                    </div>
+
+                    <hr class="non-printable">
+
+                     <!-- Results by Session/Semester -->
+                     {% if transcript_data %}
+                        {% for item in transcript_data %}
+                            <h5 class="mt-4 mb-2 fw-bold session-header">{{ item.session.name }} - {{ item.semester.get_name_display }}</h5>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped table-bordered transcript-table">
+                                    <thead>
+                                        <tr class="text-center">
+                                            <th>Code</th>
+                                            <th>Course Title</th>
+                                            <th>Units</th>
+                                            <th>Grade</th>
+                                            <th>GP</th>
+                                            <th>Points</th> {# Units * GP #}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for result in item.results %}
+                                        <tr class="text-center">
+                                            <td>{{ result.course.code }}</td>
+                                            <td class="text-start">{{ result.course.title }}</td>
+                                            <td>{{ result.course.credit_units }}</td>
+                                            <td>{{ result.grade }}</td>
+                                            <td>{{ result.grade_point|floatformat:1 }}</td>
+                                            <td>{{ result.grade_point|mul:result.course.credit_units|floatformat:1 }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                     <tfoot>
+                                         <tr>
+                                            <td colspan="2" class="text-end fw-bold">Semester Totals:</td>
+                                            <td class="text-center fw-bold">{{ item.units }}</td>
+                                            <td colspan="2"></td> {# Empty cells #}
+                                            <td class="text-center fw-bold">{{ item.gpa|mul:item.units|floatformat:1 }}</td> {# Approx points for GPA calculation #}
+                                         </tr>
+                                         <tr>
+                                            <td colspan="2" class="text-end fw-bold">Semester GPA:</td>
+                                            <td colspan="4" class="fw-bold">{{ item.gpa|floatformat:2 }}</td>
+                                         </tr>
+                                          <tr>
+                                            <td colspan="2" class="text-end fw-bold">Cumulative GPA:</td>
+                                            <td colspan="4" class="fw-bold">{{ item.cgpa|floatformat:2 }}</td>
+                                         </tr>
+                                     </tfoot>
+                                </table>
+                            </div>
+                        {% endfor %}
+
+                         <!-- Final Summary -->
+                         <hr class="mt-5">
+                         <div class="row mt-4 mb-3">
+                              <div class="col-md-6">
+                                 <h4 class="fw-bold">Final CGPA: <span class="text-success">{{ final_cgpa|floatformat:2|default:"N/A" }}</span></h4>
+                             </div>
+                             <div class="col-md-6 text-md-end">
+                                 <h5 class="fw-bold">Total Credit Units Earned: <span class="text-primary">{{ total_units|default:"0" }}</span></h5>
+                             </div>
+                         </div>
+                         <hr>
+
+                     {% else %}
+                         <div class="alert alert-light text-center mt-4" role="alert">
+                           No verified results found to generate transcript.
+                         </div>
+                     {% endif %}
+
+                     {# Placeholder for signature on print view #}
+                     <div class="row mt-5 pt-5 printable-only">
+                         <div class="col-6">
+                             <hr class="signature-line">
+                             <p class="text-center small">Registrar's Signature & Date</p>
+                         </div>
+                          <div class="col-6 text-end">
+                              <p class="small fst-italic">Official Transcript</p>
+                              {# Placeholder for school seal/stamp #}
+                               <div class="seal-placeholder">[ Official Seal ]</div>
+                          </div>
+                     </div>
+
+                </div><!-- End card-body -->
+            </div><!-- End card -->
+
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_scripts %}
+{# Template Tag needed for multiplication:
+from django import template
+register = template.Library()
+
+@register.filter
+def mul(value, arg):
+    try:
+        # Ensure values are numeric (float or int)
+        numeric_value = float(value) if value is not None else 0
+        numeric_arg = float(arg) if arg is not None else 0
+        return numeric_value * numeric_arg
+    except (ValueError, TypeError):
+        try:
+            # Handle potential Decimal type from grade_point
+            from decimal import Decimal
+            decimal_value = Decimal(str(value)) if value is not None else Decimal(0)
+            decimal_arg = Decimal(str(arg)) if arg is not None else Decimal(0)
+            return decimal_value * decimal_arg
+        except (ValueError, TypeError, ImportError):
+             return 0 # Return 0 if conversion fails
+#}
+<style>
+.printable-section .label {
+    color: #555;
+    font-size: 0.9rem;
+}
+.transcript-table th, .transcript-table td {
+    font-size: 0.8rem;
+    padding: 0.3rem !important;
+}
+.transcript-table tfoot td {
+    font-size: 0.85rem;
+    padding: 0.4rem !important;
+    background-color: #f8f9fa;
+}
+.session-header {
+    background-color: #e9ecef;
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+}
+
+/* Print Styles */
+@media print {
+    body {
+        font-size: 10pt;
+    }
+    .pagetitle, .breadcrumb, .non-printable {
+        display: none !important;
+    }
+    .printable-section {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+    }
+    .card-body {
+        padding: 0 !important;
+    }
+     .table {
+        margin-bottom: 1.5rem !important; /* Add space between tables */
+    }
+    .table-bordered th, .table-bordered td {
+        border: 1px solid #dee2e6 !important;
+    }
+    .printable-only {
+        display: block !important; /* Use block or appropriate display type */
+    }
+    a { text-decoration: none !important; color: inherit !important; }
+    .session-header {
+         background-color: #e9ecef !important; /* Ensure background prints */
+         print-color-adjust: exact !important;
+        -webkit-print-color-adjust: exact !important;
+    }
+    .transcript-table tfoot {
+        background-color: #f8f9fa !important;
+        print-color-adjust: exact !important;
+        -webkit-print-color-adjust: exact !important;
+    }
+     .signature-line {
+        border-top: 1px solid #333;
+        width: 80%;
+        margin: 2rem auto 0.5rem auto;
+     }
+     .seal-placeholder {
+         border: 1px dashed #ccc;
+         padding: 1rem;
+         display: inline-block;
+         margin-top: 1rem;
+         color: #999;
+         font-size: 0.8rem;
+     }
+
+}
+.printable-only { display: none; } /* Hide print header/footer by default */
+</style>
+{% endblock %}
+

@@ -1,0 +1,291 @@
+{% extends 'base/base_admin.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Admin Dashboard | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Admin Dashboard</h1>
+    {% include 'components/breadcrumb.html' %}
+</div><!-- End Page Title -->
+
+<section class="section dashboard">
+    <div class="row">
+
+        <!-- Left side columns -->
+        <div class="col-lg-12">
+            <div class="row">
+
+                 <!-- Welcome & Current Status -->
+                 <div class="col-12 mb-3">
+                     <p class="text-muted small">
+                         Current Session: <strong id="currentSession">{{ current_session|default:"Not Set" }}</strong> |
+                         Current Semester: <strong id="currentSemester">{{ current_semester|default:"Not Set" }}</strong>
+                     </p>
+                 </div>
+
+                <!-- Statistics Cards Row 1 -->
+                <div class="col-xxl-3 col-md-6">
+                    <div class="card info-card sales-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Total Students</h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-people"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6 id="statTotalStudents">{{ total_students|default:"0" }}</h6>
+                                     <span class="text-muted small pt-2 ps-1">Registered</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- End Student Card -->
+
+                 <div class="col-xxl-3 col-md-6">
+                    <div class="card info-card revenue-card"> <!-- Using revenue style -->
+                        <div class="card-body">
+                            <h5 class="card-title">Total Staff</h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-person-badge-fill"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6 id="statTotalStaff">{{ total_staff|default:"0" }}</h6>
+                                    <span class="text-muted small pt-2 ps-1">Members</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- End Staff Card -->
+
+                 <div class="col-xxl-3 col-md-6">
+                    <div class="card info-card customers-card"> <!-- Using customers style -->
+                        <div class="card-body">
+                            <h5 class="card-title">Pending Registrations</h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-warning text-dark">
+                                    <i class="bi bi-journal-arrow-up"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6 id="statPendingRegs">{{ pending_registrations|default:"0" }}</h6>
+                                    {% if pending_registrations > 0 %}<span class="text-warning small pt-1 fw-bold">Awaiting Approval</span>{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- End Pending Reg Card -->
+
+                 <div class="col-xxl-3 col-md-6">
+                    <div class="card info-card"> <!-- Default info style -->
+                        <div class="card-body">
+                            <h5 class="card-title">Pending Results</h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-info text-dark">
+                                     <i class="bi bi-clipboard-data"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6 id="statPendingResults">{{ pending_results|default:"0" }}</h6>
+                                    {% if pending_results > 0 %}<span class="text-info small pt-1 fw-bold">Awaiting Verification</span>{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- End Pending Results Card -->
+
+                 <!-- Statistics Cards Row 2 -->
+                <div class="col-xxl-3 col-md-6">
+                    <div class="card info-card sales-card"> <!-- Using sales style -->
+                         <div class="filter">
+                            <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+                            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                                <li class="dropdown-header text-start"><h6>Filter</h6></li>
+                                <li><a class="dropdown-item" href="#">All Time</a></li>
+                                <li><a class="dropdown-item" href="#">This Year</a></li>
+                                <li><a class="dropdown-item" href="#">This Month</a></li>
+                            </ul>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">Total Revenue</h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-currency-dollar"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6>₦{{ total_revenue|intcomma|default:"0.00" }}</h6>
+                                    {# <span class="text-success small pt-1 fw-bold">8%</span> <span class="text-muted small pt-2 ps-1">increase</span> #}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- End Revenue Card -->
+
+                 <div class="col-xxl-3 col-md-6">
+                    <div class="card info-card revenue-card"> <!-- Using revenue style -->
+                        <div class="card-body">
+                            <h5 class="card-title">Successful Payments</h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-check2-circle"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6>{{ successful_payments|default:"0" }}</h6>
+                                     <span class="text-muted small pt-2 ps-1">Transactions</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- End Success Payments Card -->
+
+                 <div class="col-xxl-3 col-md-6">
+                    <div class="card info-card customers-card"> <!-- Using customers style -->
+                        <div class="card-body">
+                            <h5 class="card-title">Recent Students</h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-person-plus-fill"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6>{{ recent_students|default:"0" }}</h6>
+                                     <span class="text-muted small pt-2 ps-1">Last 30 days</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- End Recent Students Card -->
+
+                 <div class="col-xxl-3 col-md-6">
+                    <div class="card info-card"> <!-- Default info style -->
+                        <div class="card-body">
+                            <h5 class="card-title">Pending Pass Requests</h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-secondary text-white">
+                                     <i class="bi bi-key-fill"></i>
+                                </div>
+                                <div class="ps-3">
+                                    {# Assuming context variable pending_password_requests exists #}
+                                    <h6>{{ pending_password_requests|default:"0" }}</h6>
+                                    {% if pending_password_requests > 0 %}<span class="text-secondary small pt-1 fw-bold">Awaiting Action</span>{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- End Pending Pass Requests Card -->
+
+
+                <!-- Charts -->
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Enrollment by Department</h5>
+                            <!-- Bar Chart -->
+                            <div id="enrollmentChart"></div>
+                            <script>
+                                document.addEventListener("DOMContentLoaded", () => {
+                                    const enrollmentData = {{ department_stats|safe|default:"[]" }};
+                                    new ApexCharts(document.querySelector("#enrollmentChart"), {
+                                        series: [{
+                                            name: 'Students',
+                                            data: enrollmentData.map(d => d.student_count)
+                                        }],
+                                        chart: { type: 'bar', height: 350 },
+                                        plotOptions: { bar: { borderRadius: 4, horizontal: false, } },
+                                        dataLabels: { enabled: false },
+                                        xaxis: { categories: enrollmentData.map(d => d.department__name) },
+                                    }).render();
+                                });
+                            </script>
+                            <!-- End Bar Chart -->
+                        </div>
+                    </div>
+                </div>
+                 <div class="col-lg-4">
+                     <div class="card">
+                         <div class="card-body">
+                             <h5 class="card-title">Quick Actions</h5>
+                              <div class="d-grid gap-2 mt-3">
+                                <a href="{% url 'accounts:staff_create' %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-person-plus me-1"></i> Add Staff</a>
+                                <a href="{% url 'admissions:upload_admitted' %}" class="btn btn-sm btn-outline-success"><i class="bi bi-upload me-1"></i> Upload Admissions</a>
+                                <a href="{% url 'courses:allocation_bulk' %}" class="btn btn-sm btn-outline-info"><i class="bi bi-journal-arrow-down me-1"></i> Bulk Allocate</a>
+                                <a href="{% url 'courses:registration_list' %}" class="btn btn-sm btn-outline-warning"><i class="bi bi-check2-square me-1"></i> Approve Registrations</a>
+                                <a href="{% url 'results:verification_list' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-clipboard-check me-1"></i> Verify Results</a>
+                                <a href="{% url 'admin_site:reports_dashboard' %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-file-earmark-bar-graph me-1"></i> View Reports</a>
+                              </div>
+                         </div>
+                     </div>
+                 </div>
+
+
+                <!-- Recent Activities -->
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Recent Activities</h5>
+                            <div class="activity">
+
+                                {% for student_reg in recent_student_registrations %}
+                                <div class="activity-item d-flex">
+                                    <div class="activite-label">{{ student_reg.created_at|naturaltime }}</div>
+                                    <i class='bi bi-circle-fill activity-badge text-success align-self-start'></i>
+                                    <div class="activity-content">
+                                        New Student Registered: <a href="{% url 'accounts:student_detail' student_reg.id %}" class="fw-bold text-dark">{{ student_reg.user.get_full_name|default:student_reg.matric_number }}</a> ({{ student_reg.department.code }})
+                                    </div>
+                                </div><!-- End activity item-->
+                                {% endfor %}
+
+                                {% for course_reg in recent_course_registrations %}
+                                 <div class="activity-item d-flex">
+                                    <div class="activite-label">{{ course_reg.registration_date|naturaltime }}</div>
+                                    <i class='bi bi-circle-fill activity-badge text-primary align-self-start'></i>
+                                    <div class="activity-content">
+                                        Course Registration: {{ course_reg.student.user.get_full_name|default:course_reg.student.matric_number }} for {{ course_reg.course.code }}
+                                        <span class="badge {% if course_reg.status == 'approved' %}bg-success{% elif course_reg.status == 'pending' %}bg-warning text-dark{% else %}bg-danger{% endif %}">{{ course_reg.get_status_display }}</span>
+                                    </div>
+                                </div><!-- End activity item-->
+                                {% endfor %}
+
+                                {# Add more activity types here (e.g., payments, results submitted) #}
+
+                                {% if not recent_student_registrations and not recent_course_registrations %}
+                                    <p class="text-muted text-center">No recent activities found.</p>
+                                {% endif %}
+
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- End Recent Activities -->
+
+            </div>
+        </div><!-- End Left side columns -->
+
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'admin_site/vendor/apexcharts/apexcharts.min.js' %}"></script> {# Ensure ApexCharts is loaded #}
+<script>
+    // Auto-refresh stats (optional)
+    // setInterval(fetchSystemStats, 30000); // Fetch every 30 seconds
+
+    function fetchSystemStats() {
+         fetch("{% url 'admin_site:get_system_stats_ajax' %}")
+            .then(response => response.json())
+            .then(data => {
+                if(data.success) {
+                    document.getElementById('statTotalStudents').textContent = data.stats.total_students;
+                    document.getElementById('statTotalStaff').textContent = data.stats.total_staff;
+                    document.getElementById('statPendingRegs').textContent = data.stats.pending_registrations;
+                    document.getElementById('statPendingResults').textContent = data.stats.pending_results;
+                    document.getElementById('currentSession').textContent = data.stats.current_session;
+                    document.getElementById('currentSemester').textContent = data.stats.current_semester;
+                    // Update other stats if needed
+                }
+            })
+            .catch(error => console.error('Error fetching stats:', error));
+    }
+    // Initial fetch on load
+    // fetchSystemStats();
+</script>
+{% endblock %}

@@ -1,0 +1,426 @@
+{% extends 'base/base_public.html' %}
+{% load static %}
+
+{% block title %}Complete Registration | {{ school_info.school_name }}{% endblock %}
+
+{% block extra_styles %}
+<style>
+    body {
+        background-color: #f8f9fa;
+        font-family: 'Inter', 'Nunito', sans-serif;
+    }
+    .registration-container {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1rem;
+    }
+    .logo-section {
+        display: flex;
+        justify-content: center;
+        padding: 1.5rem 0;
+    }
+    .logo {
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        color: #012970;
+    }
+    .logo img {
+        max-height: 40px;
+        margin-right: 0.5rem;
+    }
+    .logo span {
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+    .card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+        max-width: 700px;
+        width: 100%;
+    }
+    .card-title {
+        text-align: center;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #012970;
+        margin-bottom: 0.5rem;
+    }
+    .card-subtitle {
+        text-align: center;
+        color: #6c757d;
+        font-size: 0.875rem;
+        margin-bottom: 1.5rem;
+    }
+    .progress-container {
+        margin-bottom: 1.5rem;
+    }
+    .progress {
+        height: 10px;
+        background-color: #e9ecef;
+        border-radius: 5px;
+        overflow: hidden;
+        display: flex;
+    }
+    .progress-bar {
+        height: 100%;
+        transition: width 0.3s ease;
+    }
+    .progress-bar.success {
+        background-color: #198754;
+    }
+    .progress-bar.primary {
+        background-color: #0d6efd;
+        animation: progress-stripes 1s linear infinite;
+    }
+    @keyframes progress-stripes {
+        0% { background-position: 0 0; }
+        100% { background-position: 40px 0; }
+    }
+    .progress-text {
+        text-align: center;
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.5rem;
+    }
+    .form-section-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #012970;
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+        border-bottom: 2px solid #f0f0f0;
+        padding-bottom: 0.5rem;
+    }
+    .info-display {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 5px;
+        margin-bottom: 1rem;
+    }
+    .info-display p {
+        margin: 0.25rem 0;
+        font-size: 0.875rem;
+        color: #495057;
+    }
+    .info-display strong {
+        color: #212529;
+    }
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    .form-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: #212529;
+        font-size: 0.875rem;
+    }
+    .required {
+        color: #dc3545;
+    }
+    .form-control, .form-select {
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #0d6efd;
+        outline: 0;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+    textarea.form-control {
+        resize: vertical;
+        min-height: 80px;
+    }
+    .form-text {
+        font-size: 0.75rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+    .invalid-feedback {
+        display: none;
+        font-size: 0.75rem;
+        color: #dc3545;
+        margin-top: 0.25rem;
+    }
+    .was-validated .form-control:invalid ~ .invalid-feedback,
+    .was-validated .form-select:invalid ~ .invalid-feedback {
+        display: block;
+    }
+    .was-validated .form-control:invalid,
+    .was-validated .form-select:invalid {
+        border-color: #dc3545;
+    }
+    .image-preview {
+        max-height: 120px;
+        margin-top: 0.75rem;
+        border-radius: 8px;
+        border: 2px solid #dee2e6;
+        display: none;
+    }
+    .btn-primary {
+        width: 100%;
+        padding: 0.75rem;
+        background-color: #0d6efd;
+        border: none;
+        border-radius: 4px;
+        color: white;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background-color 0.15s ease-in-out;
+        margin-top: 1.5rem;
+    }
+    .btn-primary:hover:not(:disabled) {
+        background-color: #0b5ed7;
+    }
+    .btn-primary:disabled {
+        opacity: 0.65;
+        cursor: not-allowed;
+    }
+    .spinner {
+        display: inline-block;
+        width: 1rem;
+        height: 1rem;
+        border: 2px solid currentColor;
+        border-right-color: transparent;
+        border-radius: 50%;
+        animation: spinner-border 0.75s linear infinite;
+        margin-right: 0.5rem;
+        vertical-align: text-bottom;
+    }
+    @keyframes spinner-border {
+        to { transform: rotate(360deg); }
+    }
+    .hidden {
+        display: none;
+    }
+    .credits {
+        text-align: center;
+        color: #6c757d;
+        font-size: 0.875rem;
+    }
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+        margin: 0 -0.5rem;
+    }
+    .col-12 {
+        flex: 0 0 100%;
+        padding: 0 0.5rem;
+    }
+    .col-md-6 {
+        flex: 0 0 100%;
+        padding: 0 0.5rem;
+    }
+    @media (min-width: 768px) {
+        .col-md-6 {
+            flex: 0 0 50%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block main %}
+<main>
+    <div class="registration-container">
+        <div style="max-width: 700px; width: 100%;">
+
+            <div class="logo-section">
+                <a href="{% url 'website:home' %}" class="logo">
+                    {% if school_info.logo %}
+                        <img src="{{ school_info.logo.url }}" alt="{{ school_info.school_name }} Logo">
+                    {% endif %}
+                    <span>{{ school_info.school_name }}</span>
+                </a>
+            </div>
+
+            <div class="card">
+                <h5 class="card-title">Complete Your Registration</h5>
+                <p class="card-subtitle">Enter your personal details to finalize your admission.</p>
+
+                {% include 'components/alerts.html' %}
+
+                <!-- Progress Bar -->
+                <div class="progress-container">
+                    <div class="progress">
+                        <div class="progress-bar success" style="width: 33%;" title="Verification Complete"></div>
+                        <div class="progress-bar success" style="width: 33%;" title="Payment Complete"></div>
+                        <div class="progress-bar primary" style="width: 34%;" title="Registration Form"></div>
+                    </div>
+                    <p class="progress-text">Step 3 of 3: Registration Details</p>
+                </div>
+
+                <form method="POST" action="{% url 'admissions:student_registration_form' %}" enctype="multipart/form-data" id="registrationForm" novalidate>
+                    {% csrf_token %}
+
+                    {{ form.errors }}
+
+                    <h6 class="form-section-title">Personal Information</h6>
+                    <div class="info-display">
+                        <p><strong>Name:</strong> {{ admitted_student.first_name }} {{ admitted_student.last_name }}</p>
+                        <p><strong>Email:</strong> {{ admitted_student.email }}</p>
+                        <p><strong>Phone:</strong> {{ admitted_student.phone_number }}</p>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="date_of_birth" class="form-label">
+                                    Date of Birth <span class="required">*</span>
+                                </label>
+                                <input
+                                    type="date"
+                                    class="form-control"
+                                    id="date_of_birth"
+                                    name="date_of_birth"
+                                    required
+                                    value="{{ form.date_of_birth.value|default:'' }}"
+                                >
+                                <div class="invalid-feedback">
+                                    {% if form.date_of_birth.errors %}
+                                        {{ form.date_of_birth.errors.0 }}
+                                    {% else %}
+                                        Please enter your date of birth.
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="gender" class="form-label">
+                                    Gender <span class="required">*</span>
+                                </label>
+                                <select class="form-select" id="gender" name="gender" required>
+                                    <option value="">Select Gender</option>
+                                    <option value="male" {% if form.gender.value == 'male' %}selected{% endif %}>Male</option>
+                                    <option value="female" {% if form.gender.value == 'female' %}selected{% endif %}>Female</option>
+                                </select>
+                                <div class="invalid-feedback">
+                                    {% if form.gender.errors %}
+                                        {{ form.gender.errors.0 }}
+                                    {% else %}
+                                        Please select your gender.
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="address" class="form-label">
+                            Address <span class="required">*</span>
+                        </label>
+                        <textarea
+                            class="form-control"
+                            id="address"
+                            name="address"
+                            rows="3"
+                            required
+                            placeholder="Enter your full residential address"
+                        >{{ form.address.value|default:'' }}</textarea>
+                        <div class="invalid-feedback">
+                            {% if form.address.errors %}
+                                {{ form.address.errors.0 }}
+                            {% else %}
+                                Please enter your address.
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="profile_picture" class="form-label">
+                            Profile Picture <span class="required">*</span>
+                        </label>
+                        <input
+                            type="file"
+                            class="form-control"
+                            id="profile_picture"
+                            name="profile_picture"
+                            accept="image/*"
+                            required
+                        >
+                        <div class="form-text">Upload a clear passport-style photo (JPG, PNG). Max size 2MB.</div>
+                        <div class="invalid-feedback">
+                            {% if form.profile_picture.errors %}
+                                {{ form.profile_picture.errors.0 }}
+                            {% else %}
+                                Please upload a profile picture.
+                            {% endif %}
+                        </div>
+                        <img id="profilePicturePreview" src="#" alt="Image Preview" class="image-preview" />
+                    </div>
+
+                    <button class="btn-primary" type="submit" id="completeButton">
+                        <span class="spinner hidden" id="completeSpinner"></span>
+                        <span id="buttonText">✓ Complete Registration</span>
+                    </button>
+                </form>
+            </div>
+
+            <div class="credits">
+                &copy; {{ school_info.school_name }}
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    'use strict';
+
+    const form = document.getElementById('registrationForm');
+    const completeButton = document.getElementById('completeButton');
+    const spinner = document.getElementById('completeSpinner');
+    const buttonText = document.getElementById('buttonText');
+
+    // Form validation
+    form.addEventListener('submit', function (event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        } else {
+            // Show spinner on valid submission
+            completeButton.disabled = true;
+            spinner.classList.remove('hidden');
+            buttonText.textContent = 'Processing...';
+        }
+        form.classList.add('was-validated');
+    }, false);
+
+    // Image preview for profile picture
+    const profilePicInput = document.getElementById('profile_picture');
+    const profilePicPreview = document.getElementById('profilePicturePreview');
+
+    if (profilePicInput && profilePicPreview) {
+        profilePicInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    profilePicPreview.src = e.target.result;
+                    profilePicPreview.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            } else {
+                profilePicPreview.src = '#';
+                profilePicPreview.style.display = 'none';
+            }
+        });
+    }
+})();
+</script>
+{% endblock %}

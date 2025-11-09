@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admission Offer - {{ school_info.school_name }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .header img {
+            max-width: 100px;
+            margin-bottom: 10px;
+        }
+        .header h1 {
+            color: #366092; /* Primary Color */
+            margin: 0;
+        }
+        .content h2 {
+            color: #366092;
+        }
+        .pin-box {
+            background-color: #e9ecef;
+            padding: 10px 15px;
+            border-radius: 4px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .pin-box strong {
+            font-size: 1.2em;
+            letter-spacing: 2px;
+            color: #E74C3C; /* Danger Color */
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+            font-size: 0.9em;
+            color: #777;
+        }
+        .button {
+            display: inline-block;
+            background-color: #2ECC71; /* Secondary Color */
+            color: #ffffff;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+         .button:hover {
+             background-color: #27AE60; /* Success Color */
+         }
+        a {
+            color: #3498DB; /* Info Color */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            {% if school_info.logo %}
+                {# Assuming you pass the full URL or can construct it #}
+                <img src="{{ school_info.logo.url }}" alt="{{ school_info.school_name }} Logo">
+            {% endif %}
+            <h1>{{ school_info.school_name }}</h1>
+        </div>
+        <div class="content">
+            <h2>Congratulations, {{ admitted_student.first_name }} {{ admitted_student.last_name }}!</h2>
+
+            <p>We are pleased to inform you that you have been offered provisional admission to study <strong>{{ admitted_student.program.name }}</strong> in the Department of <strong>{{ admitted_student.department.name }}</strong> for the <strong>{{ admitted_student.admission_session.name }}</strong> academic session.</p>
+
+            <p>To proceed with your registration, please visit our admission portal and verify your details using your JAMB Registration Number and the Admission PIN provided below.</p>
+
+            <div class="pin-box">
+                <p style="margin-bottom: 5px;">Your JAMB Registration Number:</p>
+                <strong>{{ admitted_student.jamb_registration_number }}</strong>
+                <hr style="border-top: 1px dashed #ccc; margin: 10px 0;">
+                <p style="margin-bottom: 5px;">Your Admission PIN:</p>
+                <strong>{{ admitted_student.admission_pin }}</strong>
+            </div>
+
+            <p><strong>Next Steps:</strong></p>
+            <ol>
+                <li>Visit the Admission Portal: <a href="{{ admission_portal_url }}">{{ admission_portal_url }}</a></li>
+                <li>Enter your JAMB Registration Number and Admission PIN.</li>
+                <li>Verify your details and proceed to pay the registration fee of ₦{{ registration_fee|floatformat:2 }}.</li>
+                <li>Complete the online registration form.</li>
+            </ol>
+
+            <p>Please complete your registration before the deadline specified on the portal. Failure to do so may result in the withdrawal of this offer.</p>
+
+            <p>If you encounter any issues, please contact the admissions office at <a href="mailto:{{ school_info.school_email }}">{{ school_info.school_email }}</a> or call {{ school_info.school_phone }}.</p>
+
+            <p>We look forward to welcoming you!</p>
+
+            <p style="text-align: center;">
+                 <a href="{{ admission_portal_url }}" class="button">Go to Admission Portal</a>
+            </p>
+
+        </div>
+        <div class="footer">
+            <p>&copy; {% now "Y" %} {{ school_info.school_name }}. All rights reserved.</p>
+            <p>{{ school_info.school_address }}</p>
+        </div>
+    </div>
+</body>
+</html>
+

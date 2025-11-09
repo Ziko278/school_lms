@@ -1,0 +1,240 @@
+{% extends 'base/base.html' %} {# Extends the main skeleton #}
+{% load static %}
+
+{# Fill the basestyle block from base.html #}
+{% block basestyle %}
+    {# Include Tailwind CSS #}
+    <script src="https://cdn.tailwindcss.com"></script>
+    {# Include Alpine.js Core - Defer loading #}
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    {# Include Alpine.js Intersect Plugin - Defer loading #}
+    <script src="https://cdn.jsdelivr.net/npm/@alpinejs/intersect@3.x.x/dist/cdn.min.js"></script>
+
+    {# Fonts and Icons #}
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+    {# Inline styles specific to public layout #}
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8f9fa; }
+        .nav-link-active { font-weight: 600; color: #366092; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        .site-container { display: flex; flex-direction: column; min-height: 100vh; }
+        .site-content { flex: 1; }
+        html { scroll-behavior: smooth; }
+        .mobile-menu { transition: transform 0.3s ease-in-out; }
+        .mobile-menu-open { transform: translateX(0); }
+        .mobile-menu-closed { transform: translateX(-100%); }
+        [x-cloak] { display: none !important; }
+    </style>
+    {# Allow child templates to add extra CSS/styles in the head #}
+    {% block extra_styles %}{% endblock %}
+{% endblock %}
+
+{# Override the header block from base.html #}
+{% block header %}
+    {# Public Navigation Bar #}
+    <nav class="bg-white shadow-md sticky top-0 z-50" x-data="{ isMobileMenuOpen: false }">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    {# Logo #}
+                    <a href="{% url 'website:home' %}" class="flex-shrink-0 flex items-center">
+                        {% if school_info.logo %}
+                            <img class="block h-10 w-auto" src="{{ school_info.logo.url }}" alt="{{ school_info.school_name }}">
+                        {% else %}
+                             {# Optional: Placeholder if no logo #}
+                             <span class="inline-block h-8 w-8 bg-gray-200 rounded-full"></span>
+                        {% endif %}
+                        <span class="ml-3 text-xl font-bold text-gray-800">{{ school_info.school_name|default:"College Portal" }}</span>
+                    </a>
+                </div>
+                {# Desktop Menu #}
+                <div class="hidden sm:ml-6 sm:flex sm:space-x-8 sm:items-center">
+                    <a href="{% url 'website:home' %}" class="inline-flex items-center px-1 pt-1 border-b-2 {% if request.resolver_match.url_name == 'home' %}border-indigo-500 text-gray-900{% else %}border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700{% endif %} text-sm font-medium">Home</a>
+                    <a href="{% url 'website:about' %}" class="inline-flex items-center px-1 pt-1 border-b-2 {% if request.resolver_match.url_name == 'about' %}border-indigo-500 text-gray-900{% else %}border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700{% endif %} text-sm font-medium">About</a>
+                    <a href="{% url 'website:departments' %}" class="inline-flex items-center px-1 pt-1 border-b-2 {% if request.resolver_match.url_name == 'departments' or request.resolver_match.url_name == 'programs' %}border-indigo-500 text-gray-900{% else %}border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700{% endif %} text-sm font-medium">Academics</a>
+                    <a href="{% url 'website:admission_portal' %}" class="inline-flex items-center px-1 pt-1 border-b-2 {% if 'admission' in request.resolver_match.app_name %}border-indigo-500 text-gray-900{% else %}border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700{% endif %} text-sm font-medium">Admission</a>
+                    <a href="{% url 'website:contact' %}" class="inline-flex items-center px-1 pt-1 border-b-2 {% if request.resolver_match.url_name == 'contact' %}border-indigo-500 text-gray-900{% else %}border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700{% endif %} text-sm font-medium">Contact</a>
+                    <a href="{% url 'accounts:login' %}" class="ml-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#366092] hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#366092]">Portal Login <i class="bi bi-box-arrow-in-right ml-2"></i></a>
+                </div>
+                 {# Mobile Menu Button #}
+                <div class="-mr-2 flex items-center sm:hidden">
+                    <button @click="isMobileMenuOpen = !isMobileMenuOpen" type="button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500" aria-controls="mobile-menu" aria-expanded="false">
+                        <span class="sr-only">Open main menu</span>
+                        <svg x-show="!isMobileMenuOpen" class="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                        <svg x-show="isMobileMenuOpen" x-cloak class="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        {# Mobile Menu - Overlay #}
+        <div x-show="isMobileMenuOpen" x-cloak
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 transform -translate-x-full"
+             x-transition:enter-end="opacity-100 transform translate-x-0"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 transform translate-x-0"
+             x-transition:leave-end="opacity-0 transform -translate-x-full"
+             class="sm:hidden fixed inset-0 z-40" id="mobile-menu">
+            {# Overlay #}
+            <div class="fixed inset-0 bg-black bg-opacity-25" @click="isMobileMenuOpen = false" aria-hidden="true"></div>
+            {# Menu Panel #}
+            <div class="relative w-64 h-full bg-white shadow-xl py-4 px-6 space-y-1">
+                 <button @click="isMobileMenuOpen = false" type="button" class="absolute top-2 right-2 p-1 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500">
+                     <span class="sr-only">Close menu</span>
+                     <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                 </button>
+                <a href="{% url 'website:home' %}" class="block py-2 px-3 rounded-md text-base font-medium {% if request.resolver_match.url_name == 'home' %}bg-indigo-50 text-indigo-700{% else %}text-gray-900 hover:bg-gray-50 hover:text-gray-900{% endif %}">Home</a>
+                <a href="{% url 'website:about' %}" class="block py-2 px-3 rounded-md text-base font-medium {% if request.resolver_match.url_name == 'about' %}bg-indigo-50 text-indigo-700{% else %}text-gray-900 hover:bg-gray-50 hover:text-gray-900{% endif %}">About</a>
+                <a href="{% url 'website:departments' %}" class="block py-2 px-3 rounded-md text-base font-medium {% if request.resolver_match.url_name == 'departments' or request.resolver_match.url_name == 'programs' %}bg-indigo-50 text-indigo-700{% else %}text-gray-900 hover:bg-gray-50 hover:text-gray-900{% endif %}">Academics</a>
+                <a href="{% url 'website:admission_portal' %}" class="block py-2 px-3 rounded-md text-base font-medium {% if 'admission' in request.resolver_match.app_name %}bg-indigo-50 text-indigo-700{% else %}text-gray-900 hover:bg-gray-50 hover:text-gray-900{% endif %}">Admission</a>
+                <a href="{% url 'website:contact' %}" class="block py-2 px-3 rounded-md text-base font-medium {% if request.resolver_match.url_name == 'contact' %}bg-indigo-50 text-indigo-700{% else %}text-gray-900 hover:bg-gray-50 hover:text-gray-900{% endif %}">Contact</a>
+                <a href="{% url 'accounts:login' %}" class="block w-full text-center mt-4 py-2 px-4 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-[#366092] hover:bg-opacity-90">
+                    Portal Login <i class="bi bi-box-arrow-in-right ml-2"></i>
+                </a>
+            </div>
+        </div>
+    </nav>
+{% endblock %}
+
+{# Don't override the sidebar - public pages don't have one #}
+{% block sidebar %}{% endblock %}
+
+{# Fill the main content area defined in base.html #}
+{% block main %}
+    <div class="site-container"> {# This div helps push footer down #}
+        {# Main Content Area for Public Pages #}
+        <main class="site-content">
+            {# Display Django messages - Use the block from base.html for consistency #}
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                 {% include 'components/alerts.html' %}
+            </div>
+
+            {% block main_content %}{% endblock %} {# Content of specific public pages goes here #}
+        </main>
+    </div>
+{% endblock %}
+
+{# Override the footer block from base.html #}
+{% block footer %}
+    {# Public Footer #}
+    <footer class="bg-gray-800 text-white mt-auto py-8"> {# Use mt-auto to push footer down #}
+         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {# School Info #}
+                <div>
+                    <h3 class="text-lg font-semibold mb-3">{{ school_info.school_name|default:"College Name" }}</h3>
+                    <p class="text-sm text-gray-400">{{ school_info.motto|default:"" }}</p>
+                    <p class="text-sm text-gray-400 mt-2"><i class="bi bi-geo-alt-fill me-2"></i>{{ school_info.school_address|default:"Address not available"|linebreaksbr }}</p>
+                    <p class="text-sm text-gray-400 mt-1"><i class="bi bi-telephone-fill me-2"></i>{{ school_info.school_phone|default:"Phone not available" }}</p>
+                    <p class="text-sm text-gray-400 mt-1"><i class="bi bi-envelope-fill me-2"></i>{{ school_info.school_email|default:"Email not available" }}</p>
+                </div>
+
+                {# Quick Links #}
+                <div>
+                    <h3 class="text-lg font-semibold mb-3">Quick Links</h3>
+                    <ul class="space-y-2">
+                        <li><a href="{% url 'website:home' %}" class="text-sm text-gray-400 hover:text-white transition duration-200">Home</a></li>
+                        <li><a href="{% url 'website:about' %}" class="text-sm text-gray-400 hover:text-white transition duration-200">About Us</a></li>
+                        <li><a href="{% url 'website:departments' %}" class="text-sm text-gray-400 hover:text-white transition duration-200">Departments</a></li>
+                        <li><a href="{% url 'website:admission_portal' %}" class="text-sm text-gray-400 hover:text-white transition duration-200">Admission</a></li>
+                        <li><a href="{% url 'website:faq' %}" class="text-sm text-gray-400 hover:text-white transition duration-200">FAQ</a></li>
+                        <li><a href="{% url 'accounts:login' %}" class="text-sm text-gray-400 hover:text-white transition duration-200">Portal Login</a></li>
+                    </ul>
+                </div>
+
+                 {# Newsletter #}
+                <div>
+                    <h3 class="text-lg font-semibold mb-3">Stay Updated</h3>
+                    <p class="text-sm text-gray-400 mb-3">Subscribe to our newsletter for updates.</p>
+                     <form x-data="{ email: '', message: '', status: '', loading: false }" @submit.prevent="if (!loading) subscribeNewsletter($data)" class="flex flex-col sm:flex-row">
+                        <label for="newsletter-email" class="sr-only">Email address</label>
+                        <input id="newsletter-email" type="email" x-model="email" placeholder="Enter your email" required :disabled="loading"
+                               class="w-full px-4 py-2 rounded-md sm:rounded-l-md sm:rounded-r-none border-gray-600 bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-gray-400 disabled:opacity-50">
+                        <button type="submit" :disabled="loading"
+                                class="mt-2 sm:mt-0 w-full sm:w-auto px-4 py-2 rounded-md sm:rounded-r-md sm:rounded-l-none bg-[#366092] hover:bg-opacity-90 text-white font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#366092] disabled:opacity-50 flex items-center justify-center">
+                             <span x-show="!loading">Subscribe</span>
+                             <span x-show="loading">
+                                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                             </span>
+                        </button>
+                    </form>
+                    <div x-show="message" x-text="message" :class="{ 'text-green-400': status === 'success', 'text-red-400': status === 'error', 'text-blue-400': status === 'loading' }" class="text-sm mt-2" x-transition></div>
+                </div>
+            </div>
+            <div class="mt-8 pt-8 border-t border-gray-700 text-center text-sm text-gray-400">
+                &copy; {% now "Y" %} {{ school_info.school_name|default:"Your College Name" }}. All rights reserved.
+            </div>
+        </div>
+    </footer>
+{% endblock %}
+
+{# Use the extra_scripts block from base.html for page-specific JS #}
+{% block extra_scripts %}
+    {# Newsletter function needs to be available globally for the form in the footer #}
+    <script>
+        function subscribeNewsletter(data) {
+            data.status = 'loading'; // Indicate loading
+            data.message = 'Subscribing...';
+            data.loading = true; // Disable form
+            fetch("{% url 'website:subscribe_newsletter_ajax' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: new URLSearchParams({ email: data.email }).toString()
+            })
+            .then(response => {
+                if (!response.ok) {
+                    // Try to parse error message if server provides one
+                    return response.json().then(errData => {
+                        throw new Error(errData.message || `HTTP error! status: ${response.status}`);
+                    }).catch(() => {
+                         throw new Error(`HTTP error! status: ${response.status}`);
+                    });
+                }
+                return response.json();
+             })
+            .then(result => {
+                data.message = result.message;
+                if (result.success) {
+                    data.status = 'success';
+                    data.email = ''; // Clear input on success
+                    // Optionally hide message after a few seconds
+                    setTimeout(() => { data.message = ''; data.status = ''; }, 5000);
+                } else {
+                    data.status = 'error';
+                }
+            })
+            .catch(error => {
+                data.status = 'error';
+                // Provide a more user-friendly error
+                data.message = 'Subscription failed. Please check your email or try again later.';
+                console.error('Subscription Error:', error);
+            })
+            .finally(() => {
+                data.loading = false; // Re-enable form
+                // Only reset loading message if status isn't success/error
+                if (data.status === 'loading') {
+                     data.message = '';
+                     data.status = '';
+                }
+            });
+        }
+    </script>
+
+    {# Allow child templates (like home.html) to add their specific scripts here #}
+    {% block page_specific_scripts %}{% endblock %}
+
+{% endblock %}
+

@@ -1,0 +1,412 @@
+{% extends 'base/base_admin.html' %}
+{% load static %}
+{% load humanize %}
+{% load widget_tweaks %}
+
+{% block title %}Result Verification | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Result Verification</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'admin_site:admin_dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item active">Verification</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-12">
+
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Results Awaiting Verification</h5>
+
+                    {% include 'components/alerts.html' %}
+
+                    <!-- Filter Form -->
+                    <form method="get" class="row g-3 mb-4 align-items-end border-bottom pb-3">
+                         <div class="col-md-3">
+                            <label for="{{ form.session.id_for_label }}" class="form-label form-label-sm">Session</label>
+                            {% render_field form.session class="form-select form-select-sm" %}
+                        </div>
+                        <div class="col-md-3">
+                            <label for="{{ form.semester.id_for_label }}" class="form-label form-label-sm">Semester</label>
+                            {% render_field form.semester class="form-select form-select-sm" %}
+                        </div>
+                        <div class="col-md-3">
+                            <label for="{{ form.department.id_for_label }}" class="form-label form-label-sm">Department</label>
+                            {% render_field form.department class="form-select form-select-sm" %}
+                        </div>
+                         <div class="col-md-3">
+                            <label for="{{ form.level.id_for_label }}" class="form-label form-label-sm">Level</label>
+                            {% render_field form.level class="form-select form-select-sm" %}
+                        </div>
+                         <div class="col-md-3">
+                            <label for="{{ form.status.id_for_label }}" class="form-label form-label-sm">Status</label>
+                            {% render_field form.status class="form-select form-select-sm" %}
+                        </div>
+                        <div class="col-md-2">
+                             <button type="submit" class="btn btn-secondary btn-sm w-100"><i class="bi bi-filter"></i> Filter</button>
+                        </div>
+                         {# Add Clear Filter Button if needed #}
+                         <div class="col-md-2">
+                             <a href="{% url 'results:verification_list' %}" class="btn btn-outline-secondary btn-sm w-100">Clear</a>
+                         </div>
+                    </form>
+
+                    {% if results_page %}
+                    <form method="post" action="{% url 'results:bulk_verify_ajax' %}" id="bulkVerifyForm"> {# Action points to AJAX view #}
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-end mb-2">
+                             <button type="submit" class="btn btn-success btn-sm" id="bulkVerifyBtn" disabled>
+                                 <i class="bi bi-check2-circle me-1"></i> Verify Selected (<span id="selectedCount">0</span>)
+                             </button>
+                             {# Optional Bulk Reject #}
+                             {# <button type="button" class="btn btn-danger btn-sm ms-2" id="bulkRejectBtn" disabled>...</button> #}
+                        </div>
+
+                        <!-- Results Table -->
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover table-sm verification-table">
+                                <thead>
+                                    <tr>
+                                        <th><input class="form-check-input" type="checkbox" id="selectAllCheckbox"></th>
+                                        <th>Matric No.</th>
+                                        <th>Name</th>
+                                        <th>Course</th>
+                                        <th>CA</th>
+                                        <th>Exam</th>
+                                        <th>Total</th>
+                                        <th>Grade</th>
+                                        <th>Submitted By</th>
+                                        <th>Submitted At</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for result in results_page %}
+                                    <tr id="result-row-{{ result.id }}">
+                                        <td>
+                                            {% if result.status == 'pending' %}
+                                            <input class="form-check-input result-checkbox" type="checkbox" name="result_ids[]" value="{{ result.id }}">
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ result.student.matric_number }}</td>
+                                        <td>{{ result.student.user.get_full_name|truncatechars:20 }}</td>
+                                        <td>{{ result.course.code }}</td>
+                                        <td>{{ result.ca_score|floatformat:1 }}</td>
+                                        <td>{{ result.exam_score|floatformat:1 }}</td>
+                                        <td class="fw-bold">{{ result.total_score|floatformat:1 }}</td>
+                                        <td class="fw-bold">{{ result.grade }}</td>
+                                        <td>{{ result.submitted_by.user.get_full_name|truncatechars:15|default:"N/A" }}</td>
+                                        <td>{{ result.submitted_at|date:"d M Y, H:i" }}</td>
+                                        <td>
+                                             {% if result.status == 'verified' %}
+                                                <span class="badge bg-success">Verified</span>
+                                             {% elif result.status == 'pending' %}
+                                                <span class="badge bg-warning text-dark">Pending</span>
+                                             {% elif result.status == 'rejected' %}
+                                                 <span class="badge bg-danger">Rejected</span>
+                                             {% elif result.status == 'draft' %}
+                                                 <span class="badge bg-info text-dark">Draft</span>
+                                             {% else %}
+                                                 <span class="badge bg-secondary">{{ result.status|title }}</span>
+                                             {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if result.status == 'pending' %}
+                                            <button type="button" class="btn btn-success btn-sm verify-btn" data-id="{{ result.id }}" title="Verify">
+                                                <i class="bi bi-check-lg"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-danger btn-sm reject-btn" data-id="{{ result.id }}" data-bs-toggle="modal" data-bs-target="#rejectModal" data-matric="{{ result.student.matric_number }}" title="Reject">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                            {% elif result.status == 'rejected' %}
+                                                {# Option to revert rejection? #}
+                                                <i class="bi bi-info-circle text-muted" title="Rejected"></i>
+                                            {% elif result.status == 'verified' %}
+                                                <i class="bi bi-check-circle-fill text-success" title="Verified on {{ result.verified_at|date:'d M Y' }}"></i>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- End Results Table -->
+                    </form>
+
+                     {% include 'components/pagination.html' with page_obj=results_page %}
+
+                     {% else %}
+                      <div class="alert alert-light text-center mt-3" role="alert">
+                        No results found matching your criteria.
+                      </div>
+                     {% endif %}
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- Reject Confirmation Modal -->
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="rejectModalLabel">Reject Result</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="rejectForm" method="post" action=""> {# Action will be set dynamically #}
+          {% csrf_token %}
+          <div class="modal-body">
+            <p>Are you sure you want to reject the result for student <strong id="rejectStudentMatric"></strong>?</p>
+            <div class="mb-3">
+                <label for="rejectionReason" class="form-label">Reason for Rejection (Optional):</label>
+                <textarea class="form-control" id="rejectionReason" name="rejection_reason" rows="3" placeholder="Explain why the result is being rejected..."></textarea>
+            </div>
+             <p class="text-danger small"><i class="bi bi-exclamation-triangle me-1"></i>The lecturer will need to edit and resubmit this result.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-danger">Reject Result</button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Checkbox selection logic
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const resultCheckboxes = document.querySelectorAll('.result-checkbox');
+    const bulkVerifyBtn = document.getElementById('bulkVerifyBtn');
+    const selectedCountSpan = document.getElementById('selectedCount');
+
+    function updateSelectedCount() {
+        const count = document.querySelectorAll('.result-checkbox:checked').length;
+        selectedCountSpan.textContent = count;
+        bulkVerifyBtn.disabled = count === 0;
+    }
+
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            resultCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            updateSelectedCount();
+        });
+    }
+
+    resultCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+            if (!checkbox.checked) {
+                selectAllCheckbox.checked = false;
+            } else {
+                // Check if all are checked
+                if (document.querySelectorAll('.result-checkbox:checked').length === resultCheckboxes.length) {
+                    selectAllCheckbox.checked = true;
+                }
+            }
+            updateSelectedCount();
+        });
+    });
+
+    // Initial count
+    updateSelectedCount();
+
+    // AJAX for single Verify button
+    document.querySelectorAll('.verify-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const resultId = this.dataset.id;
+            const row = document.getElementById(`result-row-${resultId}`);
+            const buttonIcon = this.querySelector('i');
+            const originalIconClass = buttonIcon.className;
+
+            // Show spinner
+            buttonIcon.className = 'spinner-border spinner-border-sm';
+            this.disabled = true;
+
+            const formData = new FormData();
+            formData.append('result_id', resultId);
+
+            fetch("{% url 'results:verify_result_ajax' %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                     // Update UI: change status badge, replace buttons with success icon
+                     const statusCell = row.querySelector('td:nth-last-child(2)'); // Second to last td
+                     const actionCell = row.querySelector('td:last-child');
+                     const checkboxCell = row.querySelector('td:first-child input');
+
+                     statusCell.innerHTML = '<span class="badge bg-success">Verified</span>';
+                     actionCell.innerHTML = '<i class="bi bi-check-circle-fill text-success" title="Verified just now"></i>';
+                     if(checkboxCell) checkboxCell.remove(); // Remove checkbox
+                     showTemporaryAlert(data.message || 'Result verified.', 'success');
+                } else {
+                    showTemporaryAlert(data.message || 'Verification failed.', 'danger');
+                     // Restore button state
+                     buttonIcon.className = originalIconClass;
+                     this.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Verify error:', error);
+                showTemporaryAlert('An error occurred during verification.', 'danger');
+                // Restore button state
+                buttonIcon.className = originalIconClass;
+                this.disabled = false;
+            });
+        });
+    });
+
+     // Handle Reject Modal population
+    const rejectModal = document.getElementById('rejectModal');
+    if (rejectModal) {
+        rejectModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget; // Button that triggered the modal
+            const resultId = button.dataset.id;
+            const matric = button.dataset.matric;
+
+            const modalTitle = rejectModal.querySelector('.modal-title');
+            const studentMatricSpan = rejectModal.querySelector('#rejectStudentMatric');
+            const form = rejectModal.querySelector('#rejectForm');
+            const reasonTextarea = rejectModal.querySelector('#rejectionReason');
+
+            // Construct the action URL
+            const actionUrl = `/results/reject/${resultId}/`; // Assuming this URL pattern
+
+            modalTitle.textContent = `Reject Result for ${matric}`;
+            studentMatricSpan.textContent = matric;
+            form.action = actionUrl;
+            reasonTextarea.value = ''; // Clear previous reason
+        });
+    }
+
+    // AJAX for Bulk Verify Form
+    const bulkVerifyForm = document.getElementById('bulkVerifyForm');
+    if (bulkVerifyForm) {
+        bulkVerifyForm.addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent normal form submission
+
+            const formData = new FormData(bulkVerifyForm);
+            const selectedCheckboxes = bulkVerifyForm.querySelectorAll('.result-checkbox:checked');
+
+             if (selectedCheckboxes.length === 0) {
+                 showTemporaryAlert('Please select at least one result to verify.', 'warning');
+                 return;
+             }
+
+             // Disable button and show spinner
+             bulkVerifyBtn.disabled = true;
+             bulkVerifyBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Verifying...`;
+
+             fetch(bulkVerifyForm.action, { // Action URL points to the AJAX view
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showTemporaryAlert(data.message || `${data.count} result(s) verified.`, 'success');
+                     // Update UI for verified rows
+                     selectedCheckboxes.forEach(checkbox => {
+                         const resultId = checkbox.value;
+                         const row = document.getElementById(`result-row-${resultId}`);
+                         if (row) {
+                            const statusCell = row.querySelector('td:nth-last-child(2)');
+                            const actionCell = row.querySelector('td:last-child');
+                            const checkboxCellInput = row.querySelector('td:first-child input');
+
+                            statusCell.innerHTML = '<span class="badge bg-success">Verified</span>';
+                            actionCell.innerHTML = '<i class="bi bi-check-circle-fill text-success" title="Verified just now"></i>';
+                            if(checkboxCellInput) checkboxCellInput.remove();
+                         }
+                     });
+                     // Reset selection state
+                     selectAllCheckbox.checked = false;
+                     updateSelectedCount();
+                } else {
+                     showTemporaryAlert(data.message || 'Bulk verification failed.', 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Bulk Verify error:', error);
+                showTemporaryAlert('An error occurred during bulk verification.', 'danger');
+            })
+            .finally(() => {
+                 // Restore button state
+                 bulkVerifyBtn.innerHTML = `<i class="bi bi-check2-circle me-1"></i> Verify Selected (<span id="selectedCount">${document.querySelectorAll('.result-checkbox:checked').length}</span>)`;
+                 updateSelectedCount(); // Disables button if count is 0
+            });
+        });
+    }
+
+     // Helper function to show temporary alerts
+    function showTemporaryAlert(message, type = 'info') {
+        const alertContainer = document.querySelector('section .card .card-body'); // Target inside card body
+        if (!alertContainer) return;
+
+        const alertDiv = document.createElement('div');
+        // Add alert-fixed-top class if you want it sticky at the top
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.setAttribute('role', 'alert');
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        // Prepend to the container
+        alertContainer.insertBefore(alertDiv, alertContainer.firstChild);
+
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+             const bsAlert = bootstrap.Alert.getInstance(alertDiv);
+             if (bsAlert) {
+                 bsAlert.close();
+             } else if (alertDiv) {
+                alertDiv.remove(); // Fallback removal
+             }
+        }, 5000);
+    }
+
+});
+</script>
+<style>
+.verification-table th, .verification-table td {
+    vertical-align: middle;
+    font-size: 0.85rem;
+    padding: 0.5rem;
+}
+.verification-table th:first-child, .verification-table td:first-child {
+    width: 3%;
+}
+.verify-btn, .reject-btn {
+    padding: 0.1rem 0.4rem;
+    font-size: 0.8rem;
+}
+/* Style for modal textarea */
+#rejectionReason {
+    min-height: 80px;
+}
+</style>
+{% endblock %}

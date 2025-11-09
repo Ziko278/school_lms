@@ -1,0 +1,219 @@
+{% extends 'base/base_admin.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Student Enrollment Report | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Student Enrollment Report</h1>
+    {% include 'components/breadcrumb.html' %}
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Filters</h5>
+
+                    <!-- Filters Form -->
+                    <form method="get" class="row g-3 mb-4 align-items-end">
+                        <div class="col-md-3">
+                             <label for="session" class="form-label form-label-sm">Session</label>
+                             <select id="session" name="session" class="form-select form-select-sm">
+                                <option value="">All Sessions</option>
+                                {% for sess in sessions %}
+                                <option value="{{ sess.id }}" {% if sess.id|stringformat:"s" == selected_session %}selected{% endif %}>{{ sess.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                             <label for="department" class="form-label form-label-sm">Department</label>
+                             <select id="department" name="department" class="form-select form-select-sm">
+                                <option value="">All Departments</option>
+                                {% for dept in departments %}
+                                <option value="{{ dept.id }}" {% if dept.id|stringformat:"s" == selected_department %}selected{% endif %}>{{ dept.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                         <div class="col-md-2">
+                             <label for="level" class="form-label form-label-sm">Level</label>
+                             <select id="level" name="level" class="form-select form-select-sm">
+                                <option value="">All Levels</option>
+                                {% for lvl in levels %}
+                                <option value="{{ lvl.id }}" {% if lvl.id|stringformat:"s" == selected_level %}selected{% endif %}>{{ lvl.program.department.code }} - {{ lvl.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                             <label for="status" class="form-label form-label-sm">Status</label>
+                             <select id="status" name="status" class="form-select form-select-sm">
+                                <option value="">All Statuses</option>
+                                {% for value, display in status_choices %}
+                                <option value="{{ value }}" {% if value == selected_status %}selected{% endif %}>{{ display }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary btn-sm me-2 flex-grow-1"><i class="bi bi-filter"></i> Apply</button>
+                             {# Add export=excel parameter to current URL #}
+                             {% url 'admin_site:enrollment_report' as base_url %}
+                             <a href="{{ base_url }}?{{ request.GET.urlencode }}&export=excel" class="btn btn-success btn-sm" title="Export to Excel">
+                                <i class="bi bi-file-earmark-excel"></i>
+                             </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <div class="card info-card sales-card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">Total Students</h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center"><i class="bi bi-people"></i></div>
+                                <div class="ps-3"><h6>{{ total_students|intcomma }}</h6></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                     <div class="card info-card revenue-card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">Male</h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center"><i class="bi bi-gender-male"></i></div>
+                                <div class="ps-3"><h6>{{ male_count|intcomma }}</h6></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                 <div class="col-md-3">
+                     <div class="card info-card customers-card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">Female</h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center"><i class="bi bi-gender-female"></i></div>
+                                <div class="ps-3"><h6>{{ female_count|intcomma }}</h6></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                     {# Placeholder for another stat or chart preview #}
+                </div>
+            </div>
+
+             <!-- Charts -->
+            <div class="row mb-3">
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Distribution by Department</h5>
+                             <div id="deptChart"></div>
+                        </div>
+                    </div>
+                </div>
+                 <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Distribution by Level</h5>
+                             <div id="levelChart"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Student Details</h5>
+                    <!-- Student Table -->
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover datatable-custom">
+                             <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Matric No</th>
+                                    <th scope="col">Name</th>
+                                    <th scope="col">Gender</th>
+                                    <th scope="col">Department</th>
+                                    <th scope="col">Program</th>
+                                    <th scope="col">Level</th>
+                                    <th scope="col">Session</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col">Email</th>
+                                    <th scope="col">Phone</th>
+                                </tr>
+                            </thead>
+                             <tbody>
+                                {% for student_obj in students %} {# Displaying all results from context #}
+                                <tr>
+                                    <th scope="row">{{ forloop.counter }}</th>
+                                    <td>{{ student_obj.matric_number }}</td>
+                                    <td>{{ student_obj.user.get_full_name|default:student_obj.user.username }}</td>
+                                    <td>{{ student_obj.user.profile.get_gender_display|default:"N/A" }}</td>
+                                    <td>{{ student_obj.department.name }}</td>
+                                    <td>{{ student_obj.program.name|truncatechars:30 }}</td>
+                                    <td>{{ student_obj.current_level.name }}</td>
+                                    <td>{{ student_obj.admission_session.name }}</td>
+                                     <td>
+                                        <span class="badge {% if student_obj.admission_status == 'admitted' %}bg-success{% elif student_obj.admission_status == 'pending' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{{ student_obj.get_admission_status_display }}</span>
+                                     </td>
+                                    <td>{{ student_obj.user.email|default:"N/A" }}</td>
+                                    <td>{{ student_obj.user.profile.phone_number|default:"N/A" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="11" class="text-center text-muted">No students found matching your criteria.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- End Student Table -->
+                    {# Add pagination if needed, currently showing all results #}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'admin_site/vendor/apexcharts/apexcharts.min.js' %}"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        // Department Distribution Chart (Bar)
+        const deptData = {{ dept_breakdown|safe|default:"[]" }};
+        if (deptData.length > 0) {
+            new ApexCharts(document.querySelector("#deptChart"), {
+                series: [{ data: deptData.map(d => d.count) }],
+                chart: { type: 'bar', height: 350 },
+                plotOptions: { bar: { borderRadius: 4, horizontal: false, } },
+                dataLabels: { enabled: false },
+                xaxis: { categories: deptData.map(d => d.department__name) },
+                tooltip: { y: { formatter: function (val) { return val + " students" } } }
+            }).render();
+        } else {
+             document.querySelector("#deptChart").innerHTML = '<p class="text-muted text-center mt-3">No data available for department distribution.</p>';
+        }
+
+        // Level Distribution Chart (Pie)
+        const levelData = {{ level_breakdown|safe|default:"[]" }};
+         if (levelData.length > 0) {
+            new ApexCharts(document.querySelector("#levelChart"), {
+                series: levelData.map(l => l.count),
+                chart: { height: 350, type: 'pie', toolbar: { show: true } },
+                labels: levelData.map(l => l.current_level__name)
+            }).render();
+         } else {
+             document.querySelector("#levelChart").innerHTML = '<p class="text-muted text-center mt-3">No data available for level distribution.</p>';
+         }
+    });
+</script>
+{% endblock %}

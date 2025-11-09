@@ -1,0 +1,561 @@
+{% extends 'base/base_staff.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Virtual Whiteboard | {{ school_info.school_name }}{% endblock %}
+
+{% block extra_styles %}
+<!-- Whiteboard Styles -->
+<style>
+    #whiteboardContainer {
+        position: relative;
+        width: 100%;
+        min-height: 500px;
+        height: calc(100vh - 250px);
+        border: 1px solid #ccc;
+        overflow: hidden;
+        background-color: #fff;
+    }
+    #whiteboardCanvas {
+        border: 1px solid #dee2e6;
+    }
+    .toolbar {
+        background-color: #f8f9fa;
+        padding: 10px;
+        border-bottom: 2px solid #dee2e6;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+    }
+    .toolbar button, .toolbar input, .toolbar select {
+        margin-right: 5px;
+        margin-bottom: 5px;
+        height: 36px;
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
+    }
+    .toolbar .btn-check + .btn {
+        border: 1px solid #ccc;
+    }
+    .toolbar .btn-check:checked + .btn {
+        background-color: #0d6efd;
+        color: white;
+        border-color: #0d6efd;
+    }
+    .toolbar label {
+        font-size: 0.875rem;
+        margin-right: 5px;
+        margin-left: 8px;
+        font-weight: 500;
+    }
+    .color-picker-wrapper {
+        display: inline-block;
+        vertical-align: middle;
+        position: relative;
+        width: 36px;
+        height: 36px;
+    }
+    #colorPicker {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+    }
+    #colorPreview {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border: 2px solid #ccc;
+        border-radius: 4px;
+        background-color: #000000;
+        cursor: pointer;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    #saveStatus {
+        font-size: 0.875rem;
+        font-style: italic;
+        color: #6c757d;
+        margin-left: auto;
+        padding-right: 10px;
+        white-space: nowrap;
+    }
+</style>
+{% endblock %}
+
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Virtual Whiteboard</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item active">Whiteboard</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-body pt-3">
+
+                    {% include 'components/alerts.html' %}
+
+                    <!-- Toolbar -->
+                    <div class="toolbar mb-2 non-printable">
+                         {# Course Selection #}
+                        <select id="courseAllocationSelect" class="form-select form-select-sm" style="max-width: 250px;" required title="Select Course Session">
+                            <option value="">Select Course Session*</option>
+                             {% for alloc in allocations %}
+                                <option value="{{ alloc.id }}" {% if whiteboard and whiteboard.course_allocation.id == alloc.id %}selected{% endif %}>
+                                    {{ alloc.course.code }} ({{ alloc.session.name|slice:"2:" }}/{{ alloc.semester.get_name_display|slice:':1' }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <input type="text" id="whiteboardTitle" class="form-control form-control-sm" placeholder="Whiteboard Title*" style="max-width: 200px;" value="{{ whiteboard.title|default:'' }}" required title="Enter Whiteboard Title">
+
+                        {# Drawing Mode Toggle #}
+                        <input type="radio" class="btn-check" name="drawMode" id="modePen" value="pen" checked>
+                        <label class="btn btn-outline-secondary btn-sm" for="modePen" title="Pen Tool"><i class="bi bi-pencil-fill"></i></label>
+
+                        <input type="radio" class="btn-check" name="drawMode" id="modeEraser" value="eraser">
+                        <label class="btn btn-outline-secondary btn-sm" for="modeEraser" title="Eraser Tool"><i class="bi bi-eraser-fill"></i></label>
+
+                        <input type="radio" class="btn-check" name="drawMode" id="modeSelect" value="select">
+                        <label class="btn btn-outline-secondary btn-sm" for="modeSelect" title="Select/Move Tool"><i class="bi bi-arrows-move"></i></label>
+
+                        {# Color Picker #}
+                         <label for="colorPicker" title="Select Color">Color:</label>
+                        <div class="color-picker-wrapper" title="Click to change color">
+                            <input type="color" id="colorPicker" value="#000000">
+                             <span id="colorPreview"></span>
+                        </div>
+
+
+                        {# Line Width #}
+                        <label for="lineWidth" title="Adjust Line Width">Width:</label>
+                        <input type="range" id="lineWidth" min="1" max="50" value="5" class="form-range align-middle" style="width: 80px; vertical-align: middle;">
+                        <span id="lineWidthValue" class="small text-muted align-middle" style="width: 25px; display: inline-block; text-align: right;">5</span>
+
+                        {# Undo/Redo #}
+                         <button class="btn btn-outline-secondary btn-sm" id="undoBtn" title="Undo (Ctrl+Z)" disabled><i class="bi bi-arrow-counterclockwise"></i></button>
+                         <button class="btn btn-outline-secondary btn-sm" id="redoBtn" title="Redo (Ctrl+Y)" disabled><i class="bi bi-arrow-clockwise"></i></button>
+
+
+                        {# Clear and Delete #}
+                        <button class="btn btn-warning btn-sm" id="clearCanvasBtn" title="Clear Canvas Contents"><i class="bi bi-trash"></i> Clear</button>
+
+                         {# Save/Load Actions #}
+                        <button class="btn btn-primary btn-sm" id="saveCanvasBtn" title="Save Whiteboard Manually"><i class="bi bi-save"></i> Save</button>
+                        <a href="{% url 'virtual_class:whiteboard_list' %}" class="btn btn-secondary btn-sm" title="Load or Manage Saved Whiteboards"><i class="bi bi-folder2-open"></i> Load/Manage</a>
+
+                        {# Save Status Indicator #}
+                        <span id="saveStatus"></span>
+                    </div>
+
+                    <!-- Whiteboard Canvas Container -->
+                    <div id="whiteboardContainer" tabindex="0"> {# Make focusable for keyboard events #}
+                        <canvas id="whiteboardCanvas"></canvas>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{# Hidden input to store whiteboard ID if loaded #}
+<input type="hidden" id="whiteboardId" value="{{ whiteboard.id|default:'' }}">
+
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- Fabric.js Library - Must load before the whiteboard script -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const canvasContainer = document.getElementById('whiteboardContainer');
+    const canvasElement = document.getElementById('whiteboardCanvas');
+    const whiteboardIdInput = document.getElementById('whiteboardId');
+    const titleInput = document.getElementById('whiteboardTitle');
+    const allocationSelect = document.getElementById('courseAllocationSelect');
+    const saveStatus = document.getElementById('saveStatus');
+    const undoBtn = document.getElementById('undoBtn');
+    const redoBtn = document.getElementById('redoBtn');
+
+    let fabricCanvas;
+    let isDrawing = false;
+    let currentMode = 'pen'; // 'pen', 'eraser', 'select'
+    let saveTimeout = null;
+    let isSaving = false;
+    let history = []; // For undo/redo
+    let historyIndex = -1;
+    let historyLocked = false; // Prevent cycles during undo/redo
+
+    // Initialize Fabric.js Canvas
+    function initializeCanvas() {
+        fabricCanvas = new fabric.Canvas(canvasElement, {
+            isDrawingMode: true,
+            backgroundColor: '#ffffff',
+            stopContextMenu: true,
+        });
+        resizeCanvas();
+        setupDrawing();
+        updateHistory(); // Save initial state
+        loadInitialContent(); // Load content if ID is present (will update history)
+        setupEventListeners();
+        startAutoSave();
+    }
+
+    // Resize canvas to fit container
+    function resizeCanvas() {
+        if (!fabricCanvas || !canvasContainer) return;
+        // Temporarily disable observer to prevent loops
+        if (typeof resizeObserver !== 'undefined') resizeObserver.unobserve(canvasContainer);
+
+        fabricCanvas.setWidth(canvasContainer.clientWidth);
+        fabricCanvas.setHeight(canvasContainer.clientHeight);
+        fabricCanvas.renderAll();
+
+        // Re-enable observer after a short delay
+        setTimeout(() => {
+             if (typeof resizeObserver !== 'undefined') resizeObserver.observe(canvasContainer);
+        }, 100);
+    }
+     const resizeObserver = new ResizeObserver(entries => {
+        clearTimeout(window.resizeTimeout);
+        window.resizeTimeout = setTimeout(resizeCanvas, 150); // Increased debounce
+    });
+     if (canvasContainer) {
+        resizeObserver.observe(canvasContainer);
+     }
+
+
+    // Setup drawing brush and mode
+    function setupDrawing() {
+        if (!fabricCanvas) return;
+        const colorPicker = document.getElementById('colorPicker');
+        const lineWidth = document.getElementById('lineWidth');
+
+        fabricCanvas.freeDrawingBrush.color = colorPicker.value;
+        fabricCanvas.freeDrawingBrush.width = parseInt(lineWidth.value, 10);
+        fabricCanvas.renderAll();
+    }
+
+    // --- History (Undo/Redo) ---
+    function updateHistory() {
+        if (historyLocked) return; // Don't save history during undo/redo itself
+        // Discard future states if we are undoing and then drawing
+        history = history.slice(0, historyIndex + 1);
+        // Save current state
+        history.push(JSON.stringify(fabricCanvas.toJSON()));
+        historyIndex = history.length - 1;
+        updateUndoRedoButtons();
+    }
+
+    function undo() {
+        if (historyIndex > 0) {
+            historyLocked = true; // Lock history
+            historyIndex--;
+            fabricCanvas.loadFromJSON(history[historyIndex], () => {
+                fabricCanvas.renderAll();
+                historyLocked = false; // Unlock history
+                updateUndoRedoButtons();
+                 triggerSave(); // Save the undone state
+            });
+        }
+    }
+
+    function redo() {
+        if (historyIndex < history.length - 1) {
+            historyLocked = true; // Lock history
+            historyIndex++;
+            fabricCanvas.loadFromJSON(history[historyIndex], () => {
+                fabricCanvas.renderAll();
+                historyLocked = false; // Unlock history
+                updateUndoRedoButtons();
+                 triggerSave(); // Save the redone state
+            });
+        }
+    }
+
+     function updateUndoRedoButtons() {
+        undoBtn.disabled = historyIndex <= 0;
+        redoBtn.disabled = historyIndex >= history.length - 1;
+    }
+
+
+    // Load initial content if whiteboard ID exists
+    function loadInitialContent() {
+        const whiteboardId = whiteboardIdInput.value;
+        if (whiteboardId && fabricCanvas) {
+            saveStatus.textContent = 'Loading...';
+            fetch(`{% url 'virtual_class:load_whiteboard_ajax' %}?whiteboard_id=${whiteboardId}`, {
+                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.content) {
+                     historyLocked = true; // Lock history during load
+                    fabricCanvas.loadFromJSON(data.content, () => {
+                        fabricCanvas.renderAll();
+                         historyLocked = false; // Unlock history
+                         history = [JSON.stringify(fabricCanvas.toJSON())]; // Reset history with loaded state
+                         historyIndex = 0;
+                         updateUndoRedoButtons();
+                        saveStatus.textContent = 'Loaded.';
+                         setTimeout(() => { saveStatus.textContent = ''; }, 2000);
+                    });
+                     if(data.title) titleInput.value = data.title;
+                     // Ensure correct allocation is selected if loaded
+                     if(data.allocation_id) allocationSelect.value = data.allocation_id;
+                } else {
+                    console.error('Failed to load whiteboard:', data.message);
+                    saveStatus.textContent = 'Load failed.';
+                     setTimeout(() => { saveStatus.textContent = ''; }, 3000);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading whiteboard:', error);
+                saveStatus.textContent = 'Load error.';
+                 setTimeout(() => { saveStatus.textContent = ''; }, 3000);
+            });
+        }
+    }
+
+
+    // --- Event Listeners ---
+    function setupEventListeners() {
+        // Mode change
+        document.querySelectorAll('input[name="drawMode"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                currentMode = e.target.value;
+                if (!fabricCanvas) return;
+
+                if (currentMode === 'pen') {
+                    fabricCanvas.isDrawingMode = true;
+                    fabricCanvas.freeDrawingBrush = new fabric.PencilBrush(fabricCanvas);
+                    setupDrawing(); // Reapply color/width
+                } else if (currentMode === 'eraser') {
+                    fabricCanvas.isDrawingMode = true;
+                    fabricCanvas.freeDrawingBrush = new fabric.EraserBrush(fabricCanvas);
+                    fabricCanvas.freeDrawingBrush.width = parseInt(document.getElementById('lineWidth').value, 10);
+                } else { // select mode
+                    fabricCanvas.isDrawingMode = false;
+                }
+                 fabricCanvas.selection = (currentMode === 'select');
+                 fabricCanvas.defaultCursor = (currentMode === 'select') ? 'default' : 'crosshair';
+                 fabricCanvas.hoverCursor = (currentMode === 'select') ? 'move' : 'crosshair';
+                 fabricCanvas.renderAll();
+            });
+        });
+
+        // Color picker
+        const colorPicker = document.getElementById('colorPicker');
+        const colorPreview = document.getElementById('colorPreview');
+        colorPreview.addEventListener('click', () => colorPicker.click());
+         colorPicker.addEventListener('input', (e) => {
+            if (!fabricCanvas) return;
+            const newColor = e.target.value;
+            colorPreview.style.backgroundColor = newColor;
+
+            if (currentMode === 'pen') {
+                fabricCanvas.freeDrawingBrush.color = newColor;
+            } else if (currentMode !== 'eraser') {
+                const activeObjects = fabricCanvas.getActiveObjects();
+                if (activeObjects.length > 0) {
+                    activeObjects.forEach(obj => {
+                        if (obj.type === 'path') { obj.set('stroke', newColor); }
+                        else { obj.set('fill', newColor); }
+                    });
+                    fabricCanvas.renderAll();
+                    triggerSave();
+                }
+            }
+        });
+
+         // Line width slider
+        const lineWidthSlider = document.getElementById('lineWidth');
+        const lineWidthValue = document.getElementById('lineWidthValue');
+        lineWidthSlider.addEventListener('input', (e) => {
+             if (!fabricCanvas) return;
+             const newWidth = parseInt(e.target.value, 10);
+             lineWidthValue.textContent = newWidth;
+             if (currentMode === 'pen') {
+                 fabricCanvas.freeDrawingBrush.width = newWidth;
+             } else if (currentMode === 'eraser') {
+                 fabricCanvas.freeDrawingBrush.width = newWidth;
+             } else {
+                 const activeObjects = fabricCanvas.getActiveObjects();
+                 if (activeObjects.length > 0) {
+                     activeObjects.forEach(obj => {
+                          if (obj.stroke !== undefined) {
+                            obj.set('strokeWidth', newWidth);
+                          }
+                     });
+                     fabricCanvas.renderAll();
+                     triggerSave();
+                 }
+             }
+        });
+
+        // Clear canvas
+        document.getElementById('clearCanvasBtn').addEventListener('click', () => {
+             if (fabricCanvas && confirm('Are you sure you want to clear the entire whiteboard?')) {
+                fabricCanvas.clear();
+                fabricCanvas.backgroundColor = '#ffffff';
+                fabricCanvas.renderAll();
+                triggerSave();
+                updateHistory();
+             }
+        });
+
+        // Undo/Redo Buttons
+        undoBtn.addEventListener('click', undo);
+        redoBtn.addEventListener('click', redo);
+
+        // Keyboard Shortcuts (Undo/Redo, Delete)
+         canvasContainer.addEventListener('keydown', (e) => {
+            // Undo (Ctrl+Z or Cmd+Z)
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+                e.preventDefault();
+                undo();
+            }
+            // Redo (Ctrl+Y or Cmd+Shift+Z)
+            else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
+                e.preventDefault();
+                redo();
+            }
+             // Delete selected object (Delete or Backspace)
+            else if (currentMode === 'select' && (e.key === 'Delete' || e.key === 'Backspace')) {
+                 const activeObjects = fabricCanvas.getActiveObjects();
+                 if (activeObjects.length > 0) {
+                     e.preventDefault();
+                     activeObjects.forEach(obj => fabricCanvas.remove(obj));
+                     fabricCanvas.discardActiveObject();
+                     fabricCanvas.renderAll();
+                     triggerSave();
+                     updateHistory();
+                 }
+            }
+        });
+
+
+        // Manual Save Button
+        document.getElementById('saveCanvasBtn').addEventListener('click', () => {
+            saveWhiteboard(true);
+        });
+
+         // Canvas modification events to trigger auto-save & history
+        if(fabricCanvas) {
+            const handleModification = () => {
+                 triggerSave();
+                 updateHistory();
+            };
+            fabricCanvas.on('mouse:up', () => {
+                if (fabricCanvas.isDrawingMode) {
+                   handleModification();
+                }
+            });
+            fabricCanvas.on('object:modified', handleModification);
+            fabricCanvas.on('object:removed', handleModification);
+        }
+    }
+
+     // --- Auto Save Logic ---
+    function triggerSave() {
+        if (isSaving) return;
+        clearTimeout(saveTimeout);
+        saveStatus.textContent = 'Changes detected...';
+        saveTimeout = setTimeout(() => {
+            saveWhiteboard(false);
+        }, 3000);
+    }
+
+    function startAutoSave() {
+        console.log("Auto-save enabled.");
+    }
+
+    // Function to save whiteboard content via AJAX
+    function saveWhiteboard(isManualSave = false) {
+        if (isSaving && !isManualSave) {
+             console.log("Auto-save already in progress.");
+             return;
+        }
+        if (!fabricCanvas) return;
+
+        const title = titleInput.value.trim();
+        const allocationId = allocationSelect.value;
+
+        if (!allocationId) {
+            saveStatus.textContent = 'Select Course!';
+            if(isManualSave) alert('Please select a course allocation before saving.');
+            return;
+        }
+        if (!title) {
+            saveStatus.textContent = 'Enter Title!';
+            if(isManualSave) alert('Please enter a title for the whiteboard before saving.');
+            return;
+        }
+
+        isSaving = true;
+        saveStatus.textContent = 'Saving...';
+         document.getElementById('saveCanvasBtn').disabled = true;
+
+        const canvasData = JSON.stringify(fabricCanvas.toJSON());
+        const currentWhiteboardId = whiteboardIdInput.value;
+
+        const formData = new FormData();
+        formData.append('allocation_id', allocationId);
+        formData.append('title', title);
+        formData.append('content', canvasData);
+        if (currentWhiteboardId) {
+            formData.append('whiteboard_id', currentWhiteboardId);
+        }
+
+        fetch("{% url 'virtual_class:save_whiteboard_ajax' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (!currentWhiteboardId && data.whiteboard_id) {
+                    whiteboardIdInput.value = data.whiteboard_id;
+                }
+                saveStatus.textContent = 'Saved (' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ')';
+            } else {
+                console.error('Save failed:', data.message);
+                saveStatus.textContent = 'Save failed!';
+                 if(isManualSave) alert('Failed to save whiteboard: ' + data.message);
+                 setTimeout(() => { saveStatus.textContent = ''; }, 3000);
+            }
+        })
+        .catch(error => {
+            console.error('Save error:', error);
+            saveStatus.textContent = 'Save error!';
+            if(isManualSave) alert('An error occurred while saving.');
+            setTimeout(() => { saveStatus.textContent = ''; }, 3000);
+        })
+        .finally(() => {
+            isSaving = false;
+            document.getElementById('saveCanvasBtn').disabled = false;
+        });
+    }
+
+    // Initialize
+    initializeCanvas();
+
+});
+</script>
+{% endblock %}

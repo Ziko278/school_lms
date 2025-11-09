@@ -1,0 +1,141 @@
+{% extends 'base/base_admin.html' %}
+{% load static %}
+
+{% block title %}Student List | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Student Management</h1>
+    {% include 'components/breadcrumb.html' %}
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-12">
+
+            <div class="card">
+                <div class="card-body">
+                     <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">Student Roster</h5>
+                        {# Add button for bulk import or manual add if needed #}
+                        {# <a href="#" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i> Add Student</a> #}
+                        <button class="btn btn-success btn-sm"><i class="bi bi-file-earmark-excel me-1"></i> Export to Excel</button> {# Placeholder for export functionality #}
+                    </div>
+
+                    {% include 'components/alerts.html' %}
+
+                    <!-- Filters and Search -->
+                    <form method="get" class="row g-3 mb-4 align-items-end">
+                        <div class="col-md-4">
+                             <label for="search" class="form-label form-label-sm">Search</label>
+                            <input type="text" id="search" class="form-control form-control-sm" name="search" placeholder="Matric No, Name, Email..." value="{{ search_query|default:'' }}">
+                        </div>
+                        <div class="col-md-2">
+                             <label for="department" class="form-label form-label-sm">Department</label>
+                             <select id="department" name="department" class="form-select form-select-sm">
+                                <option value="">All</option>
+                                {% for dept in departments %}
+                                <option value="{{ dept.id }}" {% if dept.id|stringformat:"s" == selected_department %}selected{% endif %}>{{ dept.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                         <div class="col-md-2">
+                             <label for="level" class="form-label form-label-sm">Level</label>
+                             <select id="level" name="level" class="form-select form-select-sm">
+                                <option value="">All</option>
+                                {% for lvl in levels %} {# Assuming 'levels' context variable #}
+                                <option value="{{ lvl.id }}" {% if lvl.id|stringformat:"s" == selected_level %}selected{% endif %}>{{ lvl.program.department.code }} - {{ lvl.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                             <label for="status" class="form-label form-label-sm">Status</label>
+                             <select id="status" name="status" class="form-select form-select-sm">
+                                <option value="">All</option>
+                                {% for value, display in status_choices %}
+                                <option value="{{ value }}" {% if value == selected_status %}selected{% endif %}>{{ display }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-search me-1"></i> Filter</button>
+                        </div>
+                    </form>
+
+                    <!-- Student Table -->
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover datatable-custom">
+                            <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Matric No</th>
+                                    <th scope="col">Name</th>
+                                    <th scope="col">Department</th>
+                                    <th scope="col">Level</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student_obj in students_page %}
+                                <tr>
+                                    <th scope="row">{{ forloop.counter0|add:students_page.start_index }}</th>
+                                    <td>{{ student_obj.matric_number }}</td>
+                                    <td>
+                                         <img src="{{ student_obj.user.profile.profile_picture.url|default:'/static/admin_site/images/default_avatar.png' }}" alt="" class="rounded-circle me-2" width="30" height="30">
+                                        {{ student_obj.user.get_full_name|default:student_obj.user.username }}
+                                    </td>
+                                    <td>{{ student_obj.department.code|default:"N/A" }}</td>
+                                    <td>{{ student_obj.current_level.name|default:"N/A" }}</td>
+                                     <td>
+                                        {% if student_obj.admission_status == 'admitted' %}
+                                            <span class="badge bg-success">{{ student_obj.get_admission_status_display }}</span>
+                                        {% elif student_obj.admission_status == 'pending' %}
+                                             <span class="badge bg-warning text-dark">{{ student_obj.get_admission_status_display }}</span>
+                                         {% elif student_obj.admission_status == 'verified' %}
+                                             <span class="badge bg-info text-dark">{{ student_obj.get_admission_status_display }}</span>
+                                        {% elif student_obj.admission_status == 'graduated' %}
+                                             <span class="badge bg-secondary">{{ student_obj.get_admission_status_display }}</span>
+                                        {% else %}
+                                             <span class="badge bg-light text-dark">{{ student_obj.get_admission_status_display }}</span>
+                                        {% endif %}
+                                     </td>
+                                    <td>
+                                        <a href="{% url 'accounts:student_detail' student_obj.id %}" class="btn btn-info btn-sm" title="View Details"><i class="bi bi-eye"></i></a>
+                                        <a href="{% url 'accounts:student_edit' student_obj.id %}" class="btn btn-warning btn-sm" title="Edit Student"><i class="bi bi-pencil-square"></i></a>
+                                        {# Optional: Add delete button if applicable #}
+                                        {# <button type="button" class="btn btn-danger btn-sm" title="Delete Student" data-bs-toggle="modal" data-bs-target="#deleteStudentModal{{ student_obj.id }}">
+                                            <i class="bi bi-trash"></i>
+                                        </button> #}
+                                    </td>
+                                </tr>
+                                 {# Optional Delete Modal #}
+
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted">No students found matching your criteria.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- End Student Table -->
+
+                     <!-- Pagination -->
+                     {% include 'components/pagination.html' with page_obj=students_page %}
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+{# Add JS for live search if implemented #}
+<script>
+    // Initialize simple-datatables if needed for basic sorting/pagination without server-side
+    // new simpleDatatables.DataTable('.datatable-custom');
+</script>
+{% endblock %}

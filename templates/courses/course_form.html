@@ -1,0 +1,178 @@
+{% extends 'base/base_admin.html' %}
+{% load static %}
+
+{% block title %}{% if course %}Edit Course{% else %}Create Course{% endif %} | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>{% if course %}Edit Course{% else %}Create Course{% endif %}</h1>
+    {% include 'components/breadcrumb.html' %}
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Course Details</h5>
+
+                    {% include 'components/alerts.html' %}
+
+                    <!-- Course Form -->
+                    <form method="POST" action="" class="row g-3 needs-validation" id="courseForm" novalidate>
+                        {% csrf_token %}
+
+                        <div class="col-md-4">
+                            <label for="{{ form.code.id_for_label }}" class="form-label">{{ form.code.label }}</label>
+                            {{ form.code }}
+                            <div class="invalid-feedback" id="code-feedback">{{ form.code.errors|first }}</div>
+                            <div class="form-text small">{{ form.code.help_text }}</div>
+                        </div>
+
+                         <div class="col-md-8">
+                            <label for="{{ form.title.id_for_label }}" class="form-label">{{ form.title.label }}</label>
+                            {{ form.title }}
+                            <div class="invalid-feedback">{{ form.title.errors|first }}</div>
+                        </div>
+
+                         <div class="col-md-4">
+                            <label for="{{ form.credit_units.id_for_label }}" class="form-label">{{ form.credit_units.label }}</label>
+                            {{ form.credit_units }}
+                            <div class="invalid-feedback">{{ form.credit_units.errors|first }}</div>
+                        </div>
+
+                         <div class="col-md-4">
+                            <label for="{{ form.department.id_for_label }}" class="form-label">{{ form.department.label }}</label>
+                            {{ form.department }}
+                            <div class="invalid-feedback">{{ form.department.errors|first }}</div>
+                        </div>
+
+                         <div class="col-md-4">
+                            <label for="{{ form.level.id_for_label }}" class="form-label">{{ form.level.label }}</label>
+                            {{ form.level }}
+                            <div class="invalid-feedback">{{ form.level.errors|first }}</div>
+                             {# Consider dynamically loading levels based on department selection #}
+                        </div>
+
+                         <div class="col-md-6">
+                            <label for="{{ form.semester_offered.id_for_label }}" class="form-label">{{ form.semester_offered.label }}</label>
+                            {{ form.semester_offered }}
+                            <div class="invalid-feedback">{{ form.semester_offered.errors|first }}</div>
+                        </div>
+
+                         <div class="col-md-6 d-flex align-items-end">
+                             <div class="form-check">
+                                {{ form.is_elective }}
+                                <label class="form-check-label" for="{{ form.is_elective.id_for_label }}">
+                                    {{ form.is_elective.label }}
+                                </label>
+                                <div class="invalid-feedback">{{ form.is_elective.errors|first }}</div>
+                            </div>
+                        </div>
+
+                         <div class="col-12">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }} (Optional)</label>
+                            {{ form.description }}
+                            <div class="invalid-feedback">{{ form.description.errors|first }}</div>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="{{ form.prerequisites.id_for_label }}" class="form-label">{{ form.prerequisites.label }} (Optional)</label>
+                            {{ form.prerequisites }}
+                             <div class="invalid-feedback">{{ form.prerequisites.errors|first }}</div>
+                             <div class="form-text small">Select courses that must be passed before taking this one. Hold Ctrl/Cmd to select multiple.</div>
+                             {# Consider using a Select2/TomSelect for better multi-select UX #}
+                        </div>
+
+
+                         {% if form.non_field_errors %}
+                            <div class="col-12 text-danger small mt-2">
+                                {% for error in form.non_field_errors %}
+                                    <i class="bi bi-exclamation-triangle-fill"></i> {{ error }}<br>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary">{% if course %}Update{% else %}Create{% endif %} Course</button>
+                            <a href="{% url 'courses:course_list' %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form><!-- End Course Form -->
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+  'use strict'
+  var forms = document.querySelectorAll('.needs-validation')
+  Array.prototype.slice.call(forms)
+    .forEach(function (form) {
+      form.addEventListener('submit', function (event) {
+        if (!form.checkValidity()) {
+          event.preventDefault()
+          event.stopPropagation()
+        }
+        form.classList.add('was-validated')
+      }, false)
+    })
+})();
+
+// AJAX Check for Course Code Uniqueness
+const courseCodeInput = document.getElementById('{{ form.code.id_for_label }}');
+const codeFeedback = document.getElementById('code-feedback');
+const courseId = '{{ course.id|default:"" }}'; // Get course ID if editing
+
+if (courseCodeInput) {
+    courseCodeInput.addEventListener('blur', function() {
+        const code = this.value.trim();
+        if (code) {
+            fetch(`{% url 'courses:check_course_code_ajax' %}?code=${encodeURIComponent(code)}&course_id=${courseId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.exists) {
+                        courseCodeInput.setCustomValidity('This course code already exists.');
+                        codeFeedback.textContent = 'This course code already exists.';
+                        courseCodeInput.classList.add('is-invalid');
+                        courseCodeInput.classList.remove('is-valid');
+                    } else {
+                        courseCodeInput.setCustomValidity('');
+                        codeFeedback.textContent = ''; // Clear custom message
+                        courseCodeInput.classList.remove('is-invalid');
+                        courseCodeInput.classList.add('is-valid'); // Optional: show valid state
+                    }
+                })
+                .catch(error => console.error('Error checking course code:', error));
+        } else {
+             courseCodeInput.setCustomValidity(''); // Clear potential previous error
+             codeFeedback.textContent = '{{ form.code.errors|first }}'; // Restore original error if any
+             courseCodeInput.classList.remove('is-invalid', 'is-valid');
+        }
+         // Re-trigger validation display if form was already validated
+        if (courseCodeInput.form.classList.contains('was-validated')) {
+             courseCodeInput.reportValidity();
+        }
+    });
+}
+
+// Optional: Dynamic loading of levels based on department
+// Add event listener to department dropdown, fetch levels via AJAX, update level dropdown options
+// Example using get_levels_by_program_ajax (needs adjustment for department->level)
+// const departmentSelect = document.getElementById('{{ form.department.id_for_label }}');
+// const levelSelect = document.getElementById('{{ form.level.id_for_label }}');
+// if(departmentSelect && levelSelect) {
+//     departmentSelect.addEventListener('change', function() {
+//         const deptId = this.value;
+//         // Fetch levels for deptId and update levelSelect options...
+//     });
+// }
+
+</script>
+{% endblock %}

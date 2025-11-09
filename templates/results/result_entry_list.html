@@ -1,0 +1,98 @@
+{% extends 'base/base_staff.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Result Entry | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Result Entry</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item active">Result Entry</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-12">
+
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Select Course for Result Entry ({{ settings.current_session.name }} - {{ settings.current_semester.get_name_display }})</h5>
+
+                    {% include 'components/alerts.html' %}
+
+                    {% if allocations %}
+                    <p>Select one of your allocated courses below to enter or view results for the current session and semester.</p>
+                    <div class="row">
+                        {% for allocation in allocations %}
+                        <div class="col-lg-6 mb-4">
+                            <div class="card h-100 shadow-sm course-card">
+                                <div class="card-body">
+                                    <h5 class="card-title pt-3 pb-1">{{ allocation.course.code }} - {{ allocation.course.title }}</h5>
+                                    <p class="small text-muted mb-2">{{ allocation.course.credit_units }} Unit(s)</p>
+
+                                    {# Progress Bar for Result Entry - Uses pre-calculated percentage #}
+                                    <label class="form-label form-label-sm">Result Entry Progress ({{ allocation.results_count }}/{{ allocation.students_count }})</label>
+                                    <div class="progress" style="height: 10px;">
+                                        <div class="progress-bar {% if allocation.entry_percentage == 100 %} bg-success {% elif allocation.entry_percentage > 0 %} bg-info {% else %} bg-secondary {% endif %}"
+                                             role="progressbar"
+                                             style="width: {{ allocation.entry_percentage|floatformat:0 }}%;"
+                                             aria-valuenow="{{ allocation.entry_percentage|floatformat:0 }}"
+                                             aria-valuemin="0" aria-valuemax="100">
+                                        </div>
+                                    </div>
+
+                                    <ul class="list-unstyled mt-3 small">
+                                        <li><i class="bi bi-people text-secondary me-1"></i> Registered Students: <strong>{{ allocation.students_count }}</strong></li>
+                                        <li><i class="bi bi-pencil-square text-info me-1"></i> Results Entered: <strong>{{ allocation.results_count }}</strong></li>
+                                        <li><i class="bi bi-patch-check text-success me-1"></i> Results Verified: <strong>{{ allocation.verified_count }}</strong></li>
+                                        <li><i class="bi bi-hourglass-split text-warning me-1"></i> Pending Verification: <strong>{{ allocation.pending_count }}</strong></li>
+                                    </ul>
+
+                                    <div class="text-end mt-3">
+                                         {% if allocation.submission_complete and allocation.pending_count == 0 and allocation.results_count > 0 %}
+                                             <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> All Verified</span>
+                                             <a href="{% url 'results:result_entry' allocation.id %}" class="btn btn-outline-secondary btn-sm ms-2">View Results</a>
+                                        {% elif allocation.submission_complete and allocation.pending_count > 0 %}
+                                            <span class="badge bg-warning text-dark"><i class="bi bi-hourglass me-1"></i> Pending Verification</span>
+                                            <a href="{% url 'results:result_entry' allocation.id %}" class="btn btn-outline-warning btn-sm ms-2">View/Edit Draft</a>
+                                         {% elif allocation.results_count > 0 %}
+                                           <span class="badge bg-info"><i class="bi bi-pencil me-1"></i> In Progress</span>
+                                           <a href="{% url 'results:result_entry' allocation.id %}" class="btn btn-warning btn-sm ms-2">Enter/Edit Results</a>
+                                         {% else %}
+                                             <span class="badge bg-secondary">Not Started</span>
+                                             <a href="{% url 'results:result_entry' allocation.id %}" class="btn btn-primary btn-sm ms-2">Enter Results</a>
+                                         {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-light text-center" role="alert">
+                         You have no courses allocated for the current session ({{ settings.current_session.name }}) and semester ({{ settings.current_semester.get_name_display }}).
+                    </div>
+                    {% endif %}
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+{# Removed the custom filter code block #}
+<style>
+.course-card .card-title {
+    font-size: 1.1rem;
+}
+</style>
+{% endblock %}
+

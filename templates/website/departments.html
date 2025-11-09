@@ -1,0 +1,47 @@
+{% extends 'base/base_public.html' %}
+{% load static %}
+
+{% block title %}Departments | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="bg-gray-100 min-h-screen">
+
+    <!-- Page Header -->
+    <section class="bg-primary text-white py-16">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            
+            <h1 class="text-4xl font-bold">Our Departments</h1>
+            <p class="mt-2 text-lg">Discover the academic disciplines offered at {{ school_info.school_name }}.</p>
+        </div>
+    </section>
+
+    <!-- Departments Grid Section -->
+    <section class="py-16">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {% for dept in departments %}
+                <div class="bg-white rounded-lg shadow-lg overflow-hidden transition duration-300 hover:shadow-xl group">
+                    <div class="p-6">
+                        <h2 class="text-2xl font-bold text-primary mb-2">{{ dept.name }} ({{ dept.code }})</h2>
+                        <p class="text-gray-600 mb-4 h-24 overflow-hidden">
+                            {{ dept.description|truncatewords:25|default:"Learn more about the exciting programs and research opportunities within this department." }}
+                        </p>
+                        {% if dept.hod %}
+                        <p class="text-sm text-gray-500 mb-4">
+                            <i class="bi bi-person-fill mr-1"></i> Head of Department: {{ dept.hod.user.get_full_name }}
+                        </p>
+                        {% endif %}
+                         <a href="{% url 'website:programs' %}?department={{ dept.id }}" class="inline-block bg-secondary text-white font-semibold py-2 px-4 rounded-md group-hover:bg-green-600 transition duration-300">
+                            View Programs <i class="bi bi-arrow-right ml-1"></i>
+                        </a>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-center text-gray-500 md:col-span-2 lg:col-span-3">No departments are currently listed.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+</div>
+{% endblock %}
