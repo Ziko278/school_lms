@@ -28,7 +28,11 @@ SECRET_KEY = 'django-insecure-i*ohcsz^53p1&q_9unx-=7x2vl0awv!v(dey7r@)us*^k5(s*d
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
+CSRF_TRUSTED_ORIGINS = [
+    'https://nocenlms.name.ng',
+    'https://www.nocenlms.name.ng',
+]
 
 
 # Application definition
