@@ -326,6 +326,9 @@ def live_room_view(request, session_id):
             defaults={'joined_at': timezone.now()}
         )
 
+    # Use wss:// for HTTPS
+    protocol = 'wss' if request.is_secure() else 'ws'
+
     context = {
         'title': f'Live: {session.title}',
         'session': session,
@@ -334,7 +337,7 @@ def live_room_view(request, session_id):
         'agora_app_id': agora_creds['app_id'],
         'agora_channel': agora_creds['channel'],
         'agora_token': agora_creds['token'],
-        'websocket_url': f'ws://{request.get_host()}/ws/live-session/{session.id}/',
+        'websocket_url': f'{protocol}://{request.get_host()}/ws/live-session/{session.id}/',
     }
     return render(request, 'virtual_class/live_room.html', context)
 
