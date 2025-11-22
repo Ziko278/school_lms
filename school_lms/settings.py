@@ -38,6 +38,7 @@ CSRF_TRUSTED_ORIGINS = [
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -45,6 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
+    'channels',
     'accounts',
     'admin_site',
     'academics',
@@ -147,3 +149,40 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = 'accounts:login'
 LOGIN_REDIRECT_URL = 'accounts:dashboard'
 LOGOUT_REDIRECT_URL = 'accounts:login'
+
+# Add at the bottom of settings.py
+ASGI_APPLICATION = 'school_lms.asgi.application'
+
+# Channel Layers Configuration
+# Option 1: With Redis (if you installed it)
+# CHANNEL_LAYERS = {
+#     'default': {
+#         'BACKEND': 'channels_redis.core.RedisChannelLayer',
+#         'CONFIG': {
+#             "hosts": [('127.0.0.1', 6379)],
+#         },
+#     },
+# }
+
+#Option 2: Without Redis (In-Memory - for testing)
+#Uncomment this if you skipped Redis:
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}
+
+
+# Agora.io Configuration
+# Get these from: https://console.agora.io/
+AGORA_APP_ID = '2a4e34b85fe142fdbdf41a963acd294b'  # Replace with your actual App ID
+AGORA_APP_CERTIFICATE = '382ea6446155411aab6ca041fc913e07'  # Replace with your actual Certificate
+
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'icsportal4@gmail.com'
+EMAIL_HOST_PASSWORD = 'nmrhuldmciclbtjm'
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER

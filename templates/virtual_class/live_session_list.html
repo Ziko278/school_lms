@@ -1,0 +1,178 @@
+{% extends 'base/base_staff.html' %}
+{% load static %}
+
+{% block title %}Live Sessions | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Live Sessions</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item active">Live Sessions</li>
+        </ol>
+    </nav>
+</div>
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mt-3 mb-3">
+                        <h5 class="card-title mb-0">Your Live Sessions</h5>
+                        <a href="{% url 'virtual_class:live_session_create' %}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-1"></i> Schedule New Session
+                        </a>
+                    </div>
+
+                    {% include 'components/alerts.html' %}
+
+                    <!-- Filters -->
+                    <form method="GET" class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Status</label>
+                            <select name="status" class="form-select" onchange="this.form.submit()">
+                                <option value="">All Statuses</option>
+                                {% for value, label in status_choices %}
+                                    <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Course</label>
+                            <select name="course" class="form-select" onchange="this.form.submit()">
+                                <option value="">All Courses</option>
+                                {% for alloc in lecturer_courses %}
+                                    <option value="{{ alloc.course.id }}" {% if selected_course == alloc.course.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ alloc.course.code }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </form>
+
+                    <!-- Sessions List -->
+                    {% if sessions_page %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Course</th>
+                                        <th>Title</th>
+                                        <th>Scheduled Time</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for session in sessions_page %}
+                                        <tr>
+                                            <td><strong>{{ session.course_allocation.course.code }}</strong></td>
+                                            <td>{{ session.title }}</td>
+                                            <td>
+                                                <small>
+                                                    <i class="bi bi-calendar3"></i> {{ session.scheduled_start|date:"M d, Y" }}<br>
+                                                    <i class="bi bi-clock"></i> {{ session.scheduled_start|time:"g:i A" }} - {{ session.scheduled_end|time:"g:i A" }}
+                                                </small>
+                                            </td>
+                                            <td>
+                                                {% if session.status == 'live' %}
+                                                    <span class="badge bg-success">
+                                                        <i class="bi bi-broadcast"></i> Live Now
+                                                    </span>
+                                                {% elif session.status == 'scheduled' %}
+                                                    <span class="badge bg-info">Scheduled</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Ended</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if session.status == 'scheduled' %}
+                                                    <a href="{% url 'virtual_class:live_session_start' session.id %}" 
+                                                       class="btn btn-sm btn-success" title="Start Session">
+                                                        <i class="bi bi-play-circle"></i> Start
+                                                    </a>
+                                                    <a href="{% url 'virtual_class:live_session_edit' session.id %}" 
+                                                       class="btn btn-sm btn-primary" title="Edit">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </a>
+                                                    <form method="POST" action="{% url 'virtual_class:live_session_delete' session.id %}" 
+                                                          style="display:inline;" onsubmit="return confirm('Delete this session?');">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                {% elif session.status == 'live' %}
+                                                    <a href="{% url 'virtual_class:live_room' session.id %}" 
+                                                       class="btn btn-sm btn-success" title="Join Session">
+                                                        <i class="bi bi-box-arrow-in-right"></i> Enter Room
+                                                    </a>
+                                                    <form method="POST" action="{% url 'virtual_class:live_session_end' session.id %}" 
+                                                          style="display:inline;" onsubmit="return confirm('End this session?');">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-sm btn-warning" title="End Session">
+                                                            <i class="bi bi-stop-circle"></i> End
+                                                        </button>
+                                                    </form>
+                                                {% else %}
+                                                    <a href="{% url 'virtual_class:live_room' session.id %}" 
+                                                       class="btn btn-sm btn-secondary" title="View">
+                                                        <i class="bi bi-eye"></i> View
+                                                    </a>
+                                                    <form method="POST" action="{% url 'virtual_class:live_session_delete' session.id %}" 
+                                                          style="display:inline;" onsubmit="return confirm('Delete this session?');">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if sessions_page.has_other_pages %}
+                            <nav>
+                                <ul class="pagination justify-content-center">
+                                    {% if sessions_page.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ sessions_page.previous_page_number }}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_course %}&course={{ selected_course }}{% endif %}">Previous</a>
+                                        </li>
+                                    {% endif %}
+                                    {% for num in sessions_page.paginator.page_range %}
+                                        {% if sessions_page.number == num %}
+                                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                                        {% else %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ num }}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_course %}&course={{ selected_course }}{% endif %}">{{ num }}</a>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                    {% if sessions_page.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ sessions_page.next_page_number }}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_course %}&course={{ selected_course }}{% endif %}">Next</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i> No sessions found. 
+                            <a href="{% url 'virtual_class:live_session_create' %}">Schedule your first session</a>.
+                        </div>
+                    {% endif %}
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

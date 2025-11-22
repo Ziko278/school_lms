@@ -165,8 +165,8 @@
                 <i class="bi bi-camera-video-fill"></i><span>Virtual Class</span><i class="bi bi-chevron-down ms-auto"></i>
             </a>
              <ul id="virtualclass-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
-<!--                <li><a href="{% url 'virtual_class:recording_list' %}"><i class="bi bi-circle"></i><span>Recordings</span></a></li>-->
-<!--               -->
+                <li><a href="{% url 'virtual_class:live_session_list' %}"><i class="bi bi-circle"></i><span>Live Sessions</span></a></li>
+
                 <li><a href="{% url 'virtual_class:whiteboard' %}"><i class="bi bi-circle"></i><span>Whiteboard</span></a></li>
                  <li><a href="{% url 'virtual_class:whiteboard_list' %}"><i class="bi bi-circle"></i><span>Saved Whiteboards</span></a></li>
             </ul>
@@ -231,6 +231,7 @@
                  <i class="bi bi-play-btn-fill"></i><span>Virtual Class</span><i class="bi bi-chevron-down ms-auto"></i>
             </a>
              <ul id="virtualclass-nav-student" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+                <li><a href="{% url 'virtual_class:student_live_session_list' %}"><i class="bi bi-circle"></i><span>Virtual Class</span></a></li>
                 <li><a href="{% url 'virtual_class:student_whiteboard_list' %}"><i class="bi bi-circle"></i><span>Whiteboard</span></a></li>
                 <li><a href="{% url 'virtual_class:student_recording_list' %}"><i class="bi bi-circle"></i><span>Class Recordings</span></a></li>
                 <!-- Maybe link to view saved whiteboards -->

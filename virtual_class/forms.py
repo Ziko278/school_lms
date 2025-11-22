@@ -1,9 +1,46 @@
 from django import forms
-from .models import ClassRecording, Whiteboard
+from .models import LiveSession, ClassRecording, Whiteboard
+from django.utils import timezone
+
+
+class LiveSessionForm(forms.ModelForm):
+    """Form for creating/editing live sessions"""
+
+    class Meta:
+        model = LiveSession
+        fields = ['course_allocation', 'title', 'description', 'scheduled_start', 'scheduled_end']
+        widgets = {
+            'course_allocation': forms.Select(attrs={'class': 'form-select'}),
+            'title': forms.TextInput(
+                attrs={'class': 'form-control', 'placeholder': 'e.g., Lecture 5 - Data Structures'}),
+            'description': forms.Textarea(
+                attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Session description...'}),
+            'scheduled_start': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
+            'scheduled_end': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        start = cleaned_data.get('scheduled_start')
+        end = cleaned_data.get('scheduled_end')
+
+        if start and end:
+            if end <= start:
+                raise forms.ValidationError('End time must be after start time')
+
+            if start < timezone.now():
+                raise forms.ValidationError('Start time cannot be in the past')
+
+            # Check duration (max 4 hours)
+            duration = (end - start).total_seconds() / 3600
+            if duration > 4:
+                raise forms.ValidationError('Session duration cannot exceed 4 hours')
+
+        return cleaned_data
 
 
 class ClassRecordingForm(forms.ModelForm):
-    """Form for uploading class recordings"""
+    """Form for uploading class recordings - KEPT FOR BACKWARDS COMPATIBILITY"""
 
     class Meta:
         model = ClassRecording
@@ -43,19 +80,19 @@ class ClassRecordingForm(forms.ModelForm):
 
 
 class WhiteboardForm(forms.ModelForm):
-    """Form for saving whiteboard content"""
+    """Form for saving whiteboard content - KEPT FOR BACKWARDS COMPATIBILITY"""
 
     class Meta:
         model = Whiteboard
         fields = ['title', 'content']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
-            'content': forms.HiddenInput(),  # JSON content will be set via JavaScript
+            'content': forms.HiddenInput(),
         }
 
 
 class WhiteboardLoadForm(forms.Form):
-    """Form for loading existing whiteboard"""
+    """Form for loading existing whiteboard - KEPT FOR BACKWARDS COMPATIBILITY"""
     whiteboard = forms.ModelChoiceField(
         queryset=None,
         widget=forms.Select(attrs={'class': 'form-control'}),

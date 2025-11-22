@@ -680,3 +680,6 @@ def verify_admission_view(request):
                 'success': False,
                 'message': 'An error occurred while verifying admission.'
             }, status=500)
+
+
+

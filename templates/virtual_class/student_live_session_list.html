@@ -1,0 +1,129 @@
+{% extends 'base/base_student.html' %}
+{% load static %}
+
+{% block title %}Live Classes | {{ school_info.school_name }}{% endblock %}
+
+{% block main %}
+<div class="pagetitle">
+    <h1>Live Classes</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item active">Live Classes</li>
+        </ol>
+    </nav>
+</div>
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Your Live Sessions</h5>
+
+                    {% include 'components/alerts.html' %}
+
+                    <!-- Status Filter -->
+                    <form method="GET" class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Filter by Status</label>
+                            <select name="status" class="form-select" onchange="this.form.submit()">
+                                <option value="">All Statuses</option>
+                                {% for value, label in status_choices %}
+                                    <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </form>
+
+                    {% if sessions_page %}
+                        <div class="row">
+                            {% for session in sessions_page %}
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="card h-100 {% if session.status == 'live' %}border-success{% endif %}">
+                                        <div class="card-body">
+                                            <h6 class="card-title">
+                                                <strong>{{ session.course_allocation.course.code }}</strong>
+                                                {% if session.status == 'live' %}
+                                                    <span class="badge bg-success float-end">
+                                                        <i class="bi bi-broadcast"></i> LIVE
+                                                    </span>
+                                                {% elif session.status == 'scheduled' %}
+                                                    <span class="badge bg-info float-end">Upcoming</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary float-end">Ended</span>
+                                                {% endif %}
+                                            </h6>
+                                            <p class="card-text"><strong>{{ session.title }}</strong></p>
+                                            <p class="small text-muted mb-2">
+                                                <i class="bi bi-person"></i> {{ session.course_allocation.lecturer.user.get_full_name }}
+                                            </p>
+                                            <p class="small mb-2">
+                                                <i class="bi bi-calendar3"></i> {{ session.scheduled_start|date:"M d, Y" }}<br>
+                                                <i class="bi bi-clock"></i> {{ session.scheduled_start|time:"g:i A" }} - {{ session.scheduled_end|time:"g:i A" }}
+                                            </p>
+                                            {% if session.description %}
+                                                <p class="small text-muted">{{ session.description|truncatewords:15 }}</p>
+                                            {% endif %}
+                                        </div>
+                                        <div class="card-footer bg-transparent">
+                                            {% if session.status == 'live' %}
+                                                <a href="{% url 'virtual_class:student_join_session' session.id %}" 
+                                                   class="btn btn-success w-100">
+                                                    <i class="bi bi-box-arrow-in-right"></i> Join Now
+                                                </a>
+                                            {% elif session.status == 'scheduled' %}
+                                                <button class="btn btn-secondary w-100" disabled>
+                                                    <i class="bi bi-clock-history"></i> Starts at {{ session.scheduled_start|time:"g:i A" }}
+                                                </button>
+                                            {% else %}
+                                                <a href="{% url 'virtual_class:live_room' session.id %}" 
+                                                   class="btn btn-outline-secondary w-100">
+                                                    <i class="bi bi-eye"></i> View Recording
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if sessions_page.has_other_pages %}
+                            <nav>
+                                <ul class="pagination justify-content-center mt-3">
+                                    {% if sessions_page.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ sessions_page.previous_page_number }}{% if selected_status %}&status={{ selected_status }}{% endif %}">Previous</a>
+                                        </li>
+                                    {% endif %}
+                                    {% for num in sessions_page.paginator.page_range %}
+                                        {% if sessions_page.number == num %}
+                                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                                        {% else %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ num }}{% if selected_status %}&status={{ selected_status }}{% endif %}">{{ num }}</a>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                    {% if sessions_page.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ sessions_page.next_page_number }}{% if selected_status %}&status={{ selected_status }}{% endif %}">Next</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i> No live sessions scheduled at the moment. Check back later!
+                        </div>
+                    {% endif %}
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

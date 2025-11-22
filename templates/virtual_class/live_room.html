@@ -1,0 +1,988 @@
+{% extends 'base/base_staff.html' %}
+{% load static %}
+
+{% block title %}Live: {{ session.title }} | {{ school_info.school_name }}{% endblock %}
+
+{% block extra_styles %}
+<style>
+    body { overflow: hidden; }
+    .live-room-container {
+        display: flex;
+        height: calc(100vh - 80px);
+        background: #1a1a1a;
+    }
+    
+    /* Video Panel */
+    .video-panel {
+        flex: 0 0 350px;
+        background: #2a2a2a;
+        display: flex;
+        flex-direction: column;
+        border-right: 2px solid #444;
+        transition: all 0.3s;
+    }
+    .video-panel.minimized {
+        flex: 0 0 60px;
+    }
+    .video-panel.minimized .video-content,
+    .video-panel.minimized .participants-list {
+        display: none;
+    }
+    
+    .video-header {
+        padding: 15px;
+        background: #333;
+        border-bottom: 1px solid #444;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .video-header h6 {
+        margin: 0;
+        color: #fff;
+        font-size: 14px;
+    }
+    
+    .video-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px;
+    }
+    
+    #local-player, .remote-player {
+        width: 100%;
+        height: 200px;
+        background: #000;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .player-label {
+        position: absolute;
+        bottom: 5px;
+        left: 5px;
+        background: rgba(0,0,0,0.7);
+        color: #fff;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        z-index: 10;
+    }
+    
+    .video-controls {
+        padding: 15px;
+        background: #333;
+        border-top: 1px solid #444;
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+    }
+    
+    .video-controls button {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        border: none;
+        font-size: 18px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .video-controls button:hover {
+        transform: scale(1.1);
+    }
+    .btn-audio {
+        background: #4CAF50;
+        color: white;
+    }
+    .btn-audio.muted {
+        background: #f44336;
+    }
+    .btn-video {
+        background: #2196F3;
+        color: white;
+    }
+    .btn-video.off {
+        background: #f44336;
+    }
+    .btn-leave {
+        background: #f44336;
+        color: white;
+    }
+    
+    /* Whiteboard Panel */
+    .whiteboard-panel {
+        flex: 1;
+        background: #fff;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .whiteboard-toolbar {
+        padding: 10px 15px;
+        background: #f5f5f5;
+        border-bottom: 2px solid #ddd;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    
+    .whiteboard-toolbar button,
+    .whiteboard-toolbar input,
+    .whiteboard-toolbar select {
+        height: 36px;
+        padding: 0 12px;
+        font-size: 13px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    
+    .toolbar-group {
+        display: flex;
+        gap: 5px;
+        align-items: center;
+        padding: 0 8px;
+        border-right: 1px solid #ddd;
+    }
+    .toolbar-group:last-child {
+        border-right: none;
+    }
+    
+    .btn-tool {
+        background: white;
+        width: 36px;
+        padding: 0;
+    }
+    .btn-tool.active {
+        background: #2196F3;
+        color: white;
+    }
+    
+    #whiteboardCanvas {
+        background: white;
+        cursor: crosshair;
+    }
+    
+    .whiteboard-content {
+        flex: 1;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    #session-status {
+        position: fixed;
+        top: 90px;
+        right: 20px;
+        background: rgba(0,0,0,0.8);
+        color: white;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-size: 13px;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .status-indicator {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #4CAF50;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+    
+    /* Chat Panel (Optional) */
+    .participants-list {
+        padding: 10px;
+        max-height: 150px;
+        overflow-y: auto;
+    }
+    .participant-item {
+        padding: 8px;
+        background: #3a3a3a;
+        border-radius: 4px;
+        margin-bottom: 5px;
+        color: #fff;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .participant-icon {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #4CAF50;
+    }
+    
+    @media (max-width: 768px) {
+        .live-room-container {
+            flex-direction: column;
+        }
+        .video-panel {
+            flex: 0 0 200px;
+            border-right: none;
+            border-bottom: 2px solid #444;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block main %}
+<div id="session-status">
+    <div class="status-indicator"></div>
+    <span>Live Session</span>
+</div>
+
+<div class="live-room-container">
+    <!-- Video Panel -->
+    <div class="video-panel" id="videoPanel">
+        <div class="video-header">
+            <h6><i class="bi bi-camera-video"></i> Participants</h6>
+            <button class="btn btn-sm btn-outline-light" id="toggleVideoPanel" title="Minimize/Maximize">
+                <i class="bi bi-arrows-angle-contract"></i>
+            </button>
+        </div>
+        
+        <div class="video-content">
+            <!-- Local Video -->
+            <div id="local-player">
+                <div class="player-label">You ({{ user.get_full_name }})</div>
+            </div>
+            
+            <!-- Remote Videos will be added here -->
+            <div id="remote-players"></div>
+        </div>
+        
+        <div class="participants-list" id="participantsList">
+            <div class="text-white text-center small">
+                <i class="bi bi-people"></i> <span id="participantCount">1</span> participant(s)
+            </div>
+        </div>
+        
+        <div class="video-controls">
+            <button class="btn-audio" id="muteAudioBtn" title="Mute/Unmute Microphone">
+                <i class="bi bi-mic-fill"></i>
+            </button>
+            <button class="btn-video" id="muteVideoBtn" title="Turn Camera On/Off">
+                <i class="bi bi-camera-video-fill"></i>
+            </button>
+            <button class="btn-leave" id="leaveBtn" title="Leave Session">
+                <i class="bi bi-telephone-x-fill"></i>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Whiteboard Panel -->
+    <div class="whiteboard-panel">
+        <div class="whiteboard-toolbar">
+            {% if is_lecturer %}
+                <!-- LECTURER TOOLS -->
+                <div class="toolbar-group">
+                    <button class="btn-tool active" id="penBtn" title="Pen Tool">
+                        <i class="bi bi-pencil-fill"></i>
+                    </button>
+                    <button class="btn-tool" id="eraserBtn" title="Eraser">
+                        <i class="bi bi-eraser-fill"></i>
+                    </button>
+                    <button class="btn-tool" id="selectBtn" title="Select/Move">
+                        <i class="bi bi-arrows-move"></i>
+                    </button>
+                </div>
+
+                <div class="toolbar-group">
+                    <input type="color" id="colorPicker" value="#000000" title="Color" style="width: 50px; cursor: pointer;">
+                    <input type="range" id="brushSize" min="1" max="30" value="3" title="Brush Size" style="width: 80px;">
+                </div>
+
+                <div class="toolbar-group">
+                    <button class="btn-tool" id="undoBtn" title="Undo">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </button>
+                    <button class="btn-tool" id="redoBtn" title="Redo">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                </div>
+
+                <div class="toolbar-group">
+                    <button class="btn btn-warning btn-sm" id="clearBtn" title="Clear Canvas">
+                        <i class="bi bi-trash"></i> Clear
+                    </button>
+                </div>
+
+                <div class="toolbar-group ms-auto">
+                    <button class="btn btn-success btn-sm" id="saveWhiteboardBtn" title="Save Whiteboard">
+                        <i class="bi bi-save"></i> Save
+                    </button>
+                    <span id="saveStatus" class="small text-muted ms-2"></span>
+                </div>
+            {% else %}
+                <!-- STUDENT VIEW (Read-Only) -->
+                <div class="toolbar-group">
+                    <span class="badge bg-info">
+                        <i class="bi bi-eye"></i> View Only - Lecturer is presenting
+                    </span>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="whiteboard-content" id="whiteboardContainer">
+            <canvas id="whiteboardCanvas"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden data -->
+<input type="hidden" id="sessionId" value="{{ session.id }}">
+<input type="hidden" id="agoraAppId" value="{{ agora_app_id }}">
+<input type="hidden" id="agoraChannel" value="{{ agora_channel }}">
+<input type="hidden" id="agoraToken" value="{{ agora_token }}">
+<input type="hidden" id="websocketUrl" value="{{ websocket_url }}">
+<input type="hidden" id="isLecturer" value="{{ is_lecturer|yesno:'true,false' }}">
+<input type="hidden" id="userName" value="{{ user.get_full_name }}">
+
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- Agora RTC SDK -->
+<script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.19.0.js"></script>
+
+<!-- Fabric.js for Whiteboard -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+
+<script>
+// Live Room - Agora Video/Audio + Collaborative Whiteboard
+console.log('Script loaded');
+
+// Get data from hidden inputs
+const sessionId = document.getElementById('sessionId').value;
+const agoraAppId = document.getElementById('agoraAppId').value;
+const agoraChannel = document.getElementById('agoraChannel').value;
+let agoraToken = document.getElementById('agoraToken').value;
+const websocketUrl = document.getElementById('websocketUrl').value;
+const isLecturer = document.getElementById('isLecturer').value === 'true';
+const userName = document.getElementById('userName').value;
+
+console.log('Config:', {
+    sessionId,
+    agoraAppId,
+    agoraChannel,
+    isLecturer,
+    userName
+});
+
+// Agora Client
+let rtc = {
+    client: null,
+    localAudioTrack: null,
+    localVideoTrack: null,
+};
+
+let isAudioMuted = false;
+let isVideoMuted = false;
+let remoteUsers = {};
+
+// WebSocket for whiteboard sync
+let ws = null;
+
+// Fabric.js Canvas
+let fabricCanvas = null;
+let currentTool = 'pen';
+let canvasHistory = [];
+let historyIndex = -1;
+
+// ================== INIT ==================
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('DOM loaded, initializing...');
+
+    try {
+        await initAgoraClient();
+        await initWhiteboard();
+        await initWebSocket();
+        await setupEventListeners();
+
+        // Join Agora channel
+        await joinAgoraChannel();
+
+        console.log('All systems initialized');
+    } catch (error) {
+        console.error('Initialization error:', error);
+        alert('Failed to initialize: ' + error.message);
+    }
+});
+
+// ================== AGORA SETUP ==================
+async function initAgoraClient() {
+    console.log('Initializing Agora client...');
+
+    rtc.client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+
+    rtc.client.on('user-published', async (user, mediaType) => {
+        try {
+            await rtc.client.subscribe(user, mediaType);
+            console.log('User published:', user.uid, mediaType);
+
+            if (mediaType === 'video') {
+                const playerId = `player-${user.uid}`;
+                let playerContainer = document.getElementById(playerId);
+
+                if (!playerContainer) {
+                    playerContainer = document.createElement('div');
+                    playerContainer.id = playerId;
+                    playerContainer.className = 'remote-player';
+                    playerContainer.innerHTML = `<div class="player-label">Participant ${user.uid}</div>`;
+                    document.getElementById('remote-players').appendChild(playerContainer);
+                }
+
+                user.videoTrack.play(playerId);
+                remoteUsers[user.uid] = user;
+                updateParticipantCount();
+            }
+
+            if (mediaType === 'audio') {
+                user.audioTrack.play();
+            }
+        } catch (error) {
+            console.error('Error subscribing to user:', error);
+        }
+    });
+
+    rtc.client.on('user-unpublished', (user, mediaType) => {
+        console.log('User unpublished:', user.uid, mediaType);
+
+        if (mediaType === 'video') {
+            const playerId = `player-${user.uid}`;
+            const playerContainer = document.getElementById(playerId);
+            if (playerContainer) {
+                playerContainer.remove();
+            }
+        }
+    });
+
+    rtc.client.on('user-left', (user) => {
+        console.log('User left:', user.uid);
+        const playerId = `player-${user.uid}`;
+        const playerContainer = document.getElementById(playerId);
+        if (playerContainer) {
+            playerContainer.remove();
+        }
+        delete remoteUsers[user.uid];
+        updateParticipantCount();
+    });
+}
+
+async function joinAgoraChannel() {
+    try {
+        console.log('Joining Agora channel...');
+        const uid = await rtc.client.join(agoraAppId, agoraChannel, agoraToken, null);
+        console.log('Joined Agora channel with UID:', uid);
+
+        // Create local audio/video tracks
+        console.log('Creating local tracks...');
+        rtc.localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+        rtc.localVideoTrack = await AgoraRTC.createCameraVideoTrack();
+
+        console.log('Playing local video...');
+        // Play local video
+        rtc.localVideoTrack.play('local-player');
+
+        console.log('Publishing tracks...');
+        // Publish tracks
+        await rtc.client.publish([rtc.localAudioTrack, rtc.localVideoTrack]);
+        console.log('Published local tracks successfully');
+
+        updateParticipantCount();
+    } catch (error) {
+        console.error('Error joining channel:', error);
+        alert('Failed to join session. Please check:\n1. Camera/Mic permissions\n2. Agora credentials in settings.py\n\nError: ' + error.message);
+    }
+}
+
+async function leaveAgoraChannel() {
+    try {
+        // Close local tracks
+        if (rtc.localAudioTrack) {
+            rtc.localAudioTrack.close();
+        }
+        if (rtc.localVideoTrack) {
+            rtc.localVideoTrack.close();
+        }
+
+        // Leave channel
+        await rtc.client.leave();
+        console.log('Left Agora channel');
+    } catch (error) {
+        console.error('Error leaving channel:', error);
+    }
+}
+
+function updateParticipantCount() {
+    const count = 1 + Object.keys(remoteUsers).length;
+    const countEl = document.getElementById('participantCount');
+    if (countEl) {
+        countEl.textContent = count;
+    }
+}
+
+// ================== WHITEBOARD SETUP ==================
+async function initWhiteboard() {
+    console.log('Initializing whiteboard... isLecturer:', isLecturer);
+
+    const canvas = document.getElementById('whiteboardCanvas');
+    const container = document.getElementById('whiteboardContainer');
+
+    if (!canvas || !container) {
+        console.error('Canvas or container not found!');
+        return;
+    }
+
+    fabricCanvas = new fabric.Canvas(canvas, {
+        isDrawingMode: isLecturer, // Only lecturer can draw initially
+        backgroundColor: '#ffffff',
+        selection: isLecturer, // Only lecturer can select
+    });
+
+    console.log('Fabric canvas created');
+
+    // For students - disable all interactions
+    if (!isLecturer) {
+        console.log('Setting up read-only mode for student');
+        fabricCanvas.selection = false;
+        fabricCanvas.hoverCursor = 'default';
+        fabricCanvas.defaultCursor = 'default';
+
+        // Disable all object interactions
+        fabricCanvas.on('object:added', function(e) {
+            if (e.target) {
+                e.target.selectable = false;
+                e.target.evented = false;
+            }
+        });
+    }
+
+    // Resize canvas to fit container
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // For lecturers - setup drawing
+    if (isLecturer) {
+        console.log('Setting up drawing tools for lecturer');
+        fabricCanvas.freeDrawingBrush.color = '#000000';
+        fabricCanvas.freeDrawingBrush.width = 3;
+
+        fabricCanvas.on('path:created', () => {
+            console.log('Path created');
+            saveToHistory();
+            broadcastCanvas();
+        });
+
+        fabricCanvas.on('object:modified', () => {
+            console.log('Object modified');
+            saveToHistory();
+            broadcastCanvas();
+        });
+
+        // Initial history state
+        saveToHistory();
+    }
+
+    console.log('Whiteboard initialized successfully');
+}
+
+function resizeCanvas() {
+    if (!fabricCanvas) return;
+
+    const container = document.getElementById('whiteboardContainer');
+    if (container) {
+        fabricCanvas.setWidth(container.clientWidth);
+        fabricCanvas.setHeight(container.clientHeight);
+        fabricCanvas.renderAll();
+    }
+}
+
+function saveToHistory() {
+    if (!fabricCanvas) return;
+
+    canvasHistory = canvasHistory.slice(0, historyIndex + 1);
+    canvasHistory.push(JSON.stringify(fabricCanvas.toJSON()));
+    historyIndex = canvasHistory.length - 1;
+    updateUndoRedoButtons();
+}
+
+function updateUndoRedoButtons() {
+    if (!isLecturer) return;
+
+    const undoBtn = document.getElementById('undoBtn');
+    const redoBtn = document.getElementById('redoBtn');
+
+    if (undoBtn) undoBtn.disabled = historyIndex <= 0;
+    if (redoBtn) redoBtn.disabled = historyIndex >= canvasHistory.length - 1;
+}
+
+function undo() {
+    if (!fabricCanvas || historyIndex <= 0) return;
+
+    historyIndex--;
+    fabricCanvas.loadFromJSON(canvasHistory[historyIndex], () => {
+        fabricCanvas.renderAll();
+        broadcastCanvas();
+    });
+    updateUndoRedoButtons();
+}
+
+function redo() {
+    if (!fabricCanvas || historyIndex >= canvasHistory.length - 1) return;
+
+    historyIndex++;
+    fabricCanvas.loadFromJSON(canvasHistory[historyIndex], () => {
+        fabricCanvas.renderAll();
+        broadcastCanvas();
+    });
+    updateUndoRedoButtons();
+}
+
+function clearCanvas() {
+    if (!fabricCanvas) return;
+
+    if (confirm('Clear entire whiteboard?')) {
+        fabricCanvas.clear();
+        fabricCanvas.backgroundColor = '#ffffff';
+        fabricCanvas.renderAll();
+        saveToHistory();
+        broadcastCanvas();
+    }
+}
+
+// ================== WEBSOCKET SETUP ==================
+async function initWebSocket() {
+    console.log('Initializing WebSocket...');
+
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = websocketUrl.replace('ws://', protocol + '//');
+
+    console.log('WebSocket URL:', wsUrl);
+
+    ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+        console.log('WebSocket connected successfully');
+    };
+
+    ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        handleWebSocketMessage(data);
+    };
+
+    ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+    };
+
+    ws.onclose = () => {
+        console.log('WebSocket disconnected');
+    };
+}
+
+function handleWebSocketMessage(data) {
+    console.log('WebSocket message received:', data.type);
+
+    switch (data.type) {
+        case 'whiteboard_update':
+            // Only apply if from others (not self)
+            if (data.user !== userName) {
+                console.log('Applying whiteboard update from:', data.user);
+                applyCanvasUpdate(data.content);
+            }
+            break;
+        case 'user_joined':
+            console.log('User joined:', data.user);
+            showNotification(`${data.user} joined the session`);
+            break;
+        case 'user_left':
+            console.log('User left:', data.user);
+            showNotification(`${data.user} left the session`);
+            break;
+    }
+}
+
+function broadcastCanvas() {
+    // Only lecturer can broadcast changes
+    if (!isLecturer) {
+        console.log('Student cannot broadcast canvas');
+        return;
+    }
+
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+        console.warn('WebSocket not open, cannot broadcast');
+        return;
+    }
+
+    if (!fabricCanvas) return;
+
+    const canvasData = JSON.stringify(fabricCanvas.toJSON());
+    ws.send(JSON.stringify({
+        type: 'whiteboard_update',
+        content: canvasData,
+    }));
+    console.log('Canvas broadcasted');
+}
+
+function applyCanvasUpdate(content) {
+    if (!fabricCanvas) return;
+
+    fabricCanvas.loadFromJSON(content, () => {
+        // If student, make sure all objects remain unselectable
+        if (!isLecturer) {
+            fabricCanvas.forEachObject(function(obj) {
+                obj.selectable = false;
+                obj.evented = false;
+            });
+        }
+        fabricCanvas.renderAll();
+    });
+}
+
+// ================== EVENT LISTENERS ==================
+async function setupEventListeners() {
+    console.log('Setting up event listeners...');
+
+    // Video controls (always available)
+    const muteAudioBtn = document.getElementById('muteAudioBtn');
+    const muteVideoBtn = document.getElementById('muteVideoBtn');
+    const leaveBtn = document.getElementById('leaveBtn');
+    const toggleVideoPanelBtn = document.getElementById('toggleVideoPanel');
+
+    if (muteAudioBtn) muteAudioBtn.addEventListener('click', toggleAudio);
+    if (muteVideoBtn) muteVideoBtn.addEventListener('click', toggleVideo);
+    if (leaveBtn) leaveBtn.addEventListener('click', leaveSession);
+    if (toggleVideoPanelBtn) toggleVideoPanelBtn.addEventListener('click', toggleVideoPanel);
+
+    // Whiteboard tools (only for lecturer)
+    if (isLecturer) {
+        console.log('Setting up lecturer whiteboard controls');
+
+        const penBtn = document.getElementById('penBtn');
+        const eraserBtn = document.getElementById('eraserBtn');
+        const selectBtn = document.getElementById('selectBtn');
+        const colorPicker = document.getElementById('colorPicker');
+        const brushSize = document.getElementById('brushSize');
+        const undoBtn = document.getElementById('undoBtn');
+        const redoBtn = document.getElementById('redoBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const saveWhiteboardBtn = document.getElementById('saveWhiteboardBtn');
+
+        if (penBtn) penBtn.addEventListener('click', () => setTool('pen'));
+        if (eraserBtn) eraserBtn.addEventListener('click', () => setTool('eraser'));
+        if (selectBtn) selectBtn.addEventListener('click', () => setTool('select'));
+        if (colorPicker) colorPicker.addEventListener('input', changeColor);
+        if (brushSize) brushSize.addEventListener('input', changeBrushSize);
+        if (undoBtn) undoBtn.addEventListener('click', undo);
+        if (redoBtn) redoBtn.addEventListener('click', redo);
+        if (clearBtn) clearBtn.addEventListener('click', clearCanvas);
+        if (saveWhiteboardBtn) saveWhiteboardBtn.addEventListener('click', saveWhiteboard);
+
+        // Keyboard shortcuts only for lecturer
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key === 'z') {
+                    e.preventDefault();
+                    undo();
+                } else if (e.key === 'y') {
+                    e.preventDefault();
+                    redo();
+                }
+            }
+        });
+    } else {
+        console.log('Student mode - whiteboard controls disabled');
+    }
+}
+
+// ================== VIDEO CONTROLS ==================
+async function toggleAudio() {
+    if (!rtc.localAudioTrack) return;
+
+    try {
+        await rtc.localAudioTrack.setEnabled(!isAudioMuted);
+        isAudioMuted = !isAudioMuted;
+
+        const btn = document.getElementById('muteAudioBtn');
+        if (btn) {
+            btn.innerHTML = isAudioMuted ? '<i class="bi bi-mic-mute-fill"></i>' : '<i class="bi bi-mic-fill"></i>';
+            btn.classList.toggle('muted', isAudioMuted);
+        }
+        console.log('Audio muted:', isAudioMuted);
+    } catch (error) {
+        console.error('Error toggling audio:', error);
+    }
+}
+
+async function toggleVideo() {
+    if (!rtc.localVideoTrack) return;
+
+    try {
+        await rtc.localVideoTrack.setEnabled(!isVideoMuted);
+        isVideoMuted = !isVideoMuted;
+
+        const btn = document.getElementById('muteVideoBtn');
+        if (btn) {
+            btn.innerHTML = isVideoMuted ? '<i class="bi bi-camera-video-off-fill"></i>' : '<i class="bi bi-camera-video-fill"></i>';
+            btn.classList.toggle('off', isVideoMuted);
+        }
+        console.log('Video muted:', isVideoMuted);
+    } catch (error) {
+        console.error('Error toggling video:', error);
+    }
+}
+
+async function leaveSession() {
+    if (confirm('Leave this session?')) {
+        await leaveAgoraChannel();
+        if (ws) {
+            ws.close();
+        }
+        window.location.href = isLecturer ? '/virtual-class/live-sessions/' : '/virtual-class/student/live-sessions/';
+    }
+}
+
+function toggleVideoPanel() {
+    const panel = document.getElementById('videoPanel');
+    if (!panel) return;
+
+    panel.classList.toggle('minimized');
+
+    const icon = document.querySelector('#toggleVideoPanel i');
+    if (icon) {
+        icon.className = panel.classList.contains('minimized') ? 'bi bi-arrows-angle-expand' : 'bi bi-arrows-angle-contract';
+    }
+}
+
+// ================== WHITEBOARD CONTROLS ==================
+function setTool(tool) {
+    if (!isLecturer || !fabricCanvas) return;
+
+    console.log('Setting tool:', tool);
+    currentTool = tool;
+
+    // Update button states
+    document.querySelectorAll('.btn-tool').forEach(btn => btn.classList.remove('active'));
+
+    const colorPicker = document.getElementById('colorPicker');
+    const brushSize = document.getElementById('brushSize');
+
+    if (tool === 'pen') {
+        const penBtn = document.getElementById('penBtn');
+        if (penBtn) penBtn.classList.add('active');
+
+        fabricCanvas.isDrawingMode = true;
+        fabricCanvas.freeDrawingBrush = new fabric.PencilBrush(fabricCanvas);
+        fabricCanvas.freeDrawingBrush.color = colorPicker ? colorPicker.value : '#000000';
+        fabricCanvas.freeDrawingBrush.width = brushSize ? parseInt(brushSize.value) : 3;
+    } else if (tool === 'eraser') {
+        const eraserBtn = document.getElementById('eraserBtn');
+        if (eraserBtn) eraserBtn.classList.add('active');
+
+        fabricCanvas.isDrawingMode = true;
+        fabricCanvas.freeDrawingBrush = new fabric.EraserBrush(fabricCanvas);
+        fabricCanvas.freeDrawingBrush.width = brushSize ? parseInt(brushSize.value) : 10;
+    } else if (tool === 'select') {
+        const selectBtn = document.getElementById('selectBtn');
+        if (selectBtn) selectBtn.classList.add('active');
+
+        fabricCanvas.isDrawingMode = false;
+        fabricCanvas.selection = true;
+    }
+}
+
+function changeColor(e) {
+    if (!isLecturer || !fabricCanvas) return;
+
+    const color = e.target.value;
+    if (currentTool === 'pen' && fabricCanvas.freeDrawingBrush) {
+        fabricCanvas.freeDrawingBrush.color = color;
+    }
+}
+
+function changeBrushSize(e) {
+    if (!isLecturer || !fabricCanvas) return;
+
+    const size = parseInt(e.target.value);
+    if (fabricCanvas.freeDrawingBrush) {
+        fabricCanvas.freeDrawingBrush.width = size;
+    }
+}
+
+function saveWhiteboard() {
+    if (!isLecturer || !fabricCanvas) return;
+
+    const canvasData = JSON.stringify(fabricCanvas.toJSON());
+    const statusEl = document.getElementById('saveStatus');
+
+    if (statusEl) statusEl.textContent = 'Saving...';
+
+    const formData = new FormData();
+    formData.append('session_id', sessionId);
+    formData.append('content', canvasData);
+
+    fetch('/virtual-class/ajax/save-session-whiteboard/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (statusEl) {
+                statusEl.textContent = 'Saved!';
+                setTimeout(() => { statusEl.textContent = ''; }, 2000);
+            }
+        } else {
+            if (statusEl) statusEl.textContent = 'Save failed!';
+        }
+    })
+    .catch(error => {
+        console.error('Save error:', error);
+        if (statusEl) statusEl.textContent = 'Error!';
+    });
+}
+
+// ================== UTILITIES ==================
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function showNotification(message) {
+    console.log('Notification:', message);
+    // You could add a toast notification here
+}
+
+// ================== CLEANUP ==================
+window.addEventListener('beforeunload', async () => {
+    await leaveAgoraChannel();
+    if (ws) {
+        ws.close();
+    }
+});
+</script>
+{% endblock %}
