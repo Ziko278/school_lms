@@ -43,8 +43,8 @@
                 <div class="flex items-center">
                     {# Logo #}
                     <a href="{% url 'website:home' %}" class="flex-shrink-0 flex items-center">
-                        {% if school_info.logo %}
-                            <img class="block h-10 w-auto" src="{{ school_info.logo.url }}" alt="{{ school_info.school_name }}">
+                        {% if school_info.school_logo %}
+                            <img class="block h-10 w-auto" src="{{ school_info.school_logo.url }}" alt="{{ school_info.school_name }}">
                         {% else %}
                              {# Optional: Placeholder if no logo #}
                              <span class="inline-block h-8 w-8 bg-gray-200 rounded-full"></span>
